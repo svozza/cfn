@@ -1,5 +1,7 @@
 # cfn - Simple Cloud Formation for Node.js
 
+![CircleCI](https://circleci.com/gh/Nordstrom/cfn.svg?style=shield)
+
 ## Install
 ```
 $ npm install cfn --save-dev
