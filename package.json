@@ -1,0 +1,39 @@
+{
+  "name": "cfn",
+  "version": "1.0.0",
+  "description": "Simple Cloud Formation for Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test/*.js | tap-spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nordstrom/cfn.git"
+  },
+  "keywords": [
+    "Cloud",
+    "Formation",
+    "CloudFormation",
+    "Cloud-Formation",
+    "Node.js",
+    "Stack",
+    "Deploy"
+  ],
+  "author": "Andy Day",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Nordstrom/cfn/issues"
+  },
+  "homepage": "https://github.com/Nordstrom/cfn#readme",
+  "dependencies": {
+    "aws-sdk": "^2.4.0",
+    "bluebird": "^3.4.1",
+    "lodash": "^4.13.1",
+    "moment": "^2.13.0",
+    "sprintf": "^0.1.5"
+  },
+  "devDependencies": {
+    "blue-tape": "^0.2.0",
+    "tap-spec": "^4.1.1"
+  }
+}
