@@ -1,4 +1,4 @@
 ## Customize test commands
 test:
   override:
-    - node test | tap-xunit > $CIRCLE_TEST_REPORTS/results.xml
+    - node test
