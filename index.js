@@ -43,18 +43,21 @@ var Promise = require('bluebird'),
 
     colorMap = {
         'CREATE_IN_PROGRESS': 'gray',
-        'UPDATE_IN_PROGRESS': 'gray',
-        'DELETE_IN_PROGRESS': 'gray',
         'CREATE_COMPLETE': 'green',
+        'CREATE_FAILED': 'red',
+        'DELETE_IN_PROGRESS': 'gray',
         'DELETE_COMPLETE': 'green',
-        'UPDATE_COMPLETE': 'green',
+        'DELETE_FAILED': 'red',
         'ROLLBACK_FAILED': 'red',
         'ROLLBACK_IN_PROGRESS': 'yellow',
         'ROLLBACK_COMPLETE': 'red',
+        'UPDATE_IN_PROGRESS': 'gray',
+        'UPDATE_COMPLETE': 'green',
+        'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS': 'green',
         'UPDATE_ROLLBACK_IN_PROGRESS': 'yellow',
+        'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS': 'yellow',
         'UPDATE_ROLLBACK_COMPLETE': 'red',
-        'UPDATE_FAILED': 'red',
-        'DELETE_FAILED': 'red'
+        'UPDATE_FAILED': 'red'
     },
 
     ings = {
