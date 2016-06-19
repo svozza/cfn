@@ -42,7 +42,12 @@ var Promise = require('bluebird'),
 
 function Cfn(name, template) {
     var cf = Promise.promisifyAll(new AWS.CloudFormation()),
-        log = console.log;
+        log = console.log,
+        opts = _.isPlainObject(name) ? name : {},
+        params = opts.params;
+
+    name = opts.name || name;
+    template = opts.template || template;
 
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
@@ -160,19 +165,19 @@ function Cfn(name, template) {
             });
     }
 
-    function processCfStack(action, params) {
+    function processCfStack(action, cfparms) {
         if (action === 'update') {
-            return cf.updateStackAsync(params)
+            return cf.updateStackAsync(cfparms)
                 .catch(function (err) {
                     if (!/No updates are to be performed/.test(err)) {
                         throw err;
                     }
                 });
         }
-        return cf.createStackAsync(params);
+        return cf.createStackAsync(cfparms);
     }
 
-    function loadJs(path, params) {
+    function loadJs(path) {
         var tmpl = require(path),
             fn = _.isFunction(tmpl) ? tmpl : function () {
                 return tmpl;
@@ -277,6 +282,10 @@ cfn.createOrUpdate = function (name, template) {
 
 cfn.delete = function (name) {
     return new Cfn(name).delete();
+};
+
+cfn.outputs = function(name) {
+    return new Cfn(name).outputs();
 };
 
 module.exports = cfn;

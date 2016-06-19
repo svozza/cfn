@@ -40,3 +40,18 @@ test('Create js template', 'TEST-JS-TEMPLATE', function (t) {
             t.equal(data.Stacks[0].StackStatus, 'CREATE_COMPLETE', 'Stack Status is correct');
         });
 });
+
+test('Create js function template', 'TEST-JS-FN-TEMPLATE', function (t) {
+    return cfn({
+        name: 'TEST-JS-FN-TEMPLATE',
+        template: __dirname + '/templates/test-template-3.js',
+        params: { testParam: 'TEST-PARAM'}
+    })
+        .then(function () {
+            return cf.describeStacksAsync({ StackName: 'TEST-JS-FN-TEMPLATE' });
+        })
+        .then(function (data) {
+            t.equal(data.Stacks[0].StackName, 'TEST-JS-FN-TEMPLATE', 'Stack Name Matches');
+            t.equal(data.Stacks[0].StackStatus, 'CREATE_COMPLETE', 'Stack Status is correct');
+        });
+});
