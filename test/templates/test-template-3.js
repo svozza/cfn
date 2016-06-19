@@ -9,7 +9,7 @@ module.exports = function(params) {
         AWSTemplateFormatVersion: '2010-09-09',
         Description: 'Test Stack',
         Resources: {
-            shopperTable: {
+            testTable: {
                 Type: 'AWS::DynamoDB::Table',
                 Properties: {
                     AttributeDefinitions: [
@@ -29,17 +29,6 @@ module.exports = function(params) {
                         WriteCapacityUnits: '1'
                     },
                     TableName: 'TEST-TABLE-3-' + params.testParam
-                }
-            },
-            testDns: {
-                Type: 'AWS::Route53::RecordSet',
-                Properties: {
-                    HostedZoneId: 'Z36ZPHHEG9SJZC',
-                    Name: 'test-cfn.andyday.io',
-                    Comment: 'Test Dns',
-                    Type: 'CNAME',
-                    TTL: 60,
-                    ResourceRecords: ['google.com']
                 }
             }
         }

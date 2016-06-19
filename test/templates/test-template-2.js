@@ -8,7 +8,7 @@ module.exports = {
     AWSTemplateFormatVersion: '2010-09-09',
     Description: 'Test Stack',
     Resources: {
-        shopperTable: {
+        testTable: {
             Type: 'AWS::DynamoDB::Table',
             Properties: {
                 AttributeDefinitions: [

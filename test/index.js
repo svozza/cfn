@@ -15,6 +15,7 @@ function test(name, stackName, fn) {
             return Promise.resolve();
         })
         .then(function () {
+            console.log('Start... ', name, stackName);
             return tape(name, fn);
         });
 }
