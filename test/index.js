@@ -25,7 +25,7 @@ test('Default js template', function (t) {
             return cf.describeStacksAsync({ StackName: 'TEST-JS-TEMPLATE' });
         })
         .then(function (data) {
-            t.equal(data.Stacks[0].StackName, 'TEST-JS-TEMPLATE', 'Stack Name Matches');
+            t.equal(data.Stacks[0].StackName, 'TEST-JS-TEMPLAT', 'Stack Name Matches');
             t.equal(data.Stacks[0].StackStatus, 'CREATE_COMPLETE', 'Stack Status is correct');
         });
 });
