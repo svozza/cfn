@@ -9,43 +9,25 @@ $ npm install cfn --save-dev
 
 ## Usage
 
+Use cfn to create or update a Cloud Formation stack.  It returns a promise.  You can use Node.js modules or standard 
+json for Cloud Formation Templates.
+
 ```javascript
 
 var cfn = require('cfn');
 
-cfn.config(myAwsConfig);
 
-cfn('Foo-Bar', 'template.js')
+// Create or update (if it exists) the Foo-Bar stack with the template.js Node.js module.
+cfn('Foo-Bar', __dirname + '/template.js')
     .then(function() {
         console.log('done');
     });
     
+// Create or update the Foo-Bar stack with the template.json json template.
 cfn('Foo-Bar', 'template.json');
 
-cfn('Foo-Bar', 'template.yml');
-
-cfn({
-    name: 'Foo-Bar',
-    template: 'template.js',
-    createOnly: true,
-    quiet: true
-});
-
-cfn({
-    name: 'Foo-Bar',
-    template: 'template.js',
-    action: 'create',
-    quiet: true
-});
-
-cfn.create('Foo-Bar', 'template.js');
-cfn.createOrUpdate('Foo-Bar', 'template.js');
+// Delete the Foo-Bar stack
 cfn.delete('Foo-Bar');
-
-var yesterday = new Date();
-yesterday.setDate(yesterday.getDate() - 1);
-
-cfn.cleanup(/\w+-Bar/, yesterday);
 
 ```
     

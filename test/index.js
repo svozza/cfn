@@ -6,10 +6,10 @@ var tape = require('blue-tape'),
     AWS = require('aws-sdk'),
     cf = Promise.promisifyAll(new AWS.CloudFormation());
 
-function test(name, fn) {
-    return cf.describeStacksAsync({ StackName: 'TEST-JS-TEMPLATE' })
+function test(name, stackName, fn) {
+    return cf.describeStacksAsync({ StackName: stackName })
         .then(function () {
-            return cfn.delete('TEST-JS-TEMPLATE');
+            return cfn.delete(stackName);
         })
         .catch(function () {
             return Promise.resolve();
@@ -19,13 +19,24 @@ function test(name, fn) {
         });
 }
 
-test('Default js template', function (t) {
-    return cfn('TEST-JS-TEMPLATE', __dirname + '/templates/test-template.js')
+test('Create json template', 'TEST-JSON-TEMPLATE', function (t) {
+    return cfn('TEST-JSON-TEMPLATE', __dirname + '/templates/test-template-1.json')
+        .then(function () {
+            return cf.describeStacksAsync({ StackName: 'TEST-JSON-TEMPLATE' });
+        })
+        .then(function (data) {
+            t.equal(data.Stacks[0].StackName, 'TEST-JSON-TEMPLATE', 'Stack Name Matches');
+            t.equal(data.Stacks[0].StackStatus, 'CREATE_COMPLETE', 'Stack Status is correct');
+        });
+});
+
+test('Create js template', 'TEST-JS-TEMPLATE', function (t) {
+    return cfn('TEST-JS-TEMPLATE', __dirname + '/templates/test-template-2.js')
         .then(function () {
             return cf.describeStacksAsync({ StackName: 'TEST-JS-TEMPLATE' });
         })
         .then(function (data) {
-            t.equal(data.Stacks[0].StackName, 'TEST-JS-TEMPLAT', 'Stack Name Matches');
+            t.equal(data.Stacks[0].StackName, 'TEST-JS-TEMPLATE', 'Stack Name Matches');
             t.equal(data.Stacks[0].StackStatus, 'CREATE_COMPLETE', 'Stack Status is correct');
         });
 });
