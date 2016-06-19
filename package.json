@@ -4,7 +4,7 @@
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "node test | tee >(tap-json > $CIRCLE_TEST_REPORTS/results.json) | tap-spec"
+    "test": "node test | tee tap-json > $CIRCLE_TEST_REPORTS/results.json | tap-spec"
   },
   "repository": {
     "type": "git",
