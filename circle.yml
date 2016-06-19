@@ -1,4 +1,4 @@
 ## Customize test commands
 test:
   override:
-    - node test
+    - node test | tap-json > $CIRCLE_TEST_REPORTS/results.cucumber
