@@ -1,6 +1,6 @@
 {
   "name": "cfn",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
@@ -28,6 +28,7 @@
   "dependencies": {
     "aws-sdk": "^2.4.0",
     "bluebird": "^3.4.1",
+    "colors": "^1.1.2",
     "lodash": "^4.13.1",
     "moment": "^2.13.0",
     "sprintf": "^0.1.5"

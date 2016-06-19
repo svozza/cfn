@@ -16,6 +16,7 @@ var Promise = require('bluebird'),
     keyBy = require('lodash/fp/keyBy'),
     get = require('lodash/fp/get'),
     mapValues = require('lodash/fp/mapValues'),
+    colors = require('colors'),
 
     success = [
         'CREATE_COMPLETE',
@@ -38,7 +39,35 @@ var Promise = require('bluebird'),
         'UPDATE_COMPLETE',
         'ROLLBACK_COMPLETE',
         'UPDATE_ROLLBACK_COMPLETE'
-    ];
+    ],
+
+    colorMap = {
+        'CREATE_IN_PROGRESS': 'gray',
+        'UPDATE_IN_PROGRESS': 'gray',
+        'DELETE_IN_PROGRESS': 'gray',
+        'CREATE_COMPLETE': 'green',
+        'DELETE_COMPLETE': 'green',
+        'UPDATE_COMPLETE': 'green',
+        'ROLLBACK_FAILED': 'red',
+        'ROLLBACK_IN_PROGRESS': 'yellow',
+        'ROLLBACK_COMPLETE': 'red',
+        'UPDATE_ROLLBACK_IN_PROGRESS': 'yellow',
+        'UPDATE_ROLLBACK_COMPLETE': 'red',
+        'UPDATE_FAILED': 'red',
+        'DELETE_FAILED': 'red'
+    },
+
+    ings = {
+        'create': 'Creating',
+        'delete': 'Deleting',
+        'update': 'Updating'
+    },
+
+    eds = {
+        'create': 'Created',
+        'delete': 'Deleted',
+        'update': 'Updated'
+    };
 
 function Cfn(name, template) {
     var cf = Promise.promisifyAll(new AWS.CloudFormation()),
@@ -63,11 +92,41 @@ function Cfn(name, template) {
                 return resolve();
             }
 
-            function _failure(status, msg) {
-                var statusPart = status ? ' with ' + status + ' status' : '',
-                    fullMsg = logPrefix + ' Failed' + statusPart + (msg ? ': ' + msg : '');
+            function _failure(msg) {
+                var fullMsg = logPrefix + ' Failed' + (msg ? ': ' + msg : '');
                 clearInterval(interval);
                 return reject(fullMsg);
+            }
+
+            function _processEvents(events) {
+                events = _.sortBy(events, 'Timestamp');
+                _.forEach(events, function (event) {
+                    displayedEvents[event.EventId] = true;
+                    // log(event);
+                    log(sprintf('[%s] %s %s: %s - %s  %s  %s',
+                        moment(event.Timestamp).format('HH:mm:ss').gray,
+                        ings[action],
+                        name.cyan,
+                        event.ResourceType,
+                        event.LogicalResourceId,
+                        colors[colorMap[event.ResourceStatus]](event.ResourceStatus),
+                        event.ResourceStatusReason || ''
+                    ));
+                });
+
+                var lastEvent = _.last(events) || {},
+                    resourceType = lastEvent.ResourceType,
+                    status = lastEvent.ResourceStatus,
+                    statusReason = lastEvent.ResourceStatusReason;
+
+                if (resourceType !== 'AWS::CloudFormation::Stack') {
+                    // Do nothing
+                } else if (_.includes(failed, status)) {
+                    _failure(statusReason);
+                } else if (_.includes(success, status)) {
+                    _success();
+                }
+                running = false;
             }
 
             interval = setInterval(function () {
@@ -80,68 +139,39 @@ function Cfn(name, template) {
                 }
                 running = true;
 
-                return (function loop() {
-                    // log('loop:', logPrefix, next ? '(' + next + ')' : '');
-                    if (!done) {
-                        cf.describeStackEvents({
-                            StackName: name,
-                            NextToken: next
-                        }, function (err, data) {
-                            // log('events:', logPrefix, err, data);
+                (function loop() {
+                    // log('loop:', logPrefix, done, next ? '(' + next + ')' : '');
+                    cf.describeStackEvents({
+                        StackName: name,
+                        NextToken: next
+                    }, function (err, data) {
+                        try {
+                            // log('events:', logPrefix, err, !!data);
+                            if (err && notExists.test(err)) {
+                                return _success();
+                            }
+                            if (err) {
+                                return _failure(err);
+                            }
                             next = (data || {}).NextToken;
                             done = !next || err || !data;
-                            if (err || !data) {
-                                return;
-                            }
+                            running = false;
+
                             _.forEach(data.StackEvents, function (event) {
                                 if (displayedEvents[event.EventId]) {
                                     return;
                                 }
                                 events.push(event);
                             });
-                            return loop();
-                        });
-                    }
-                    events = _.sortBy(events, 'Timestamp');
-                    _.forEach(events, function (event) {
-                        displayedEvents[event.EventId] = true;
-                        //log(event);
-                        log(sprintf('[%s] %s  %s  %s - %s  %s  %s',
-                            moment(event.Timestamp).format('hh:mm:ss a'),
-                            name,
-                            action.toUpperCase(),
-                            event.ResourceType,
-                            event.LogicalResourceId,
-                            event.ResourceStatus,
-                            event.ResourceStatusReason || ''
-                        ));
-                    });
-
-                    cf.describeStacks({ StackName: name }, function (err, data) {
-                        var stack,
-                            status,
-                            statusReason;
-
-                        // log('describe:', logPrefix, err, data);
-                        if (err && notExists.test(err)) {
-                            return _success();
+                            if (!done) {
+                                loop();
+                            } else {
+                                _processEvents(events);
+                                // _describeStack();
+                            }
+                        } catch (e) {
+                            _failure(e);
                         }
-                        if (err) {
-                            return _failure(err);
-                        }
-
-                        stack = data.Stacks[0];
-                        status = stack.StackStatus;
-                        statusReason = stack.StackStatusReason;
-
-                        if (_.includes(failed, status)) {
-                            return _failure(statusReason);
-                        }
-
-                        if (_.includes(success, status)) {
-                            return _success();
-                        }
-                        running = false;
                     });
                 })();
             }, 3000);
@@ -205,10 +235,11 @@ function Cfn(name, template) {
         return cf.deleteStackAsync({ StackName: name })
             .then(function () {
                 return checkStack('delete', name);
-            });/*
-            .then(function () {
-                return cf.waitForAsync('stackDeleteComplete');
-            });*/
+            });
+        /*
+         .then(function () {
+         return cf.waitForAsync('stackDeleteComplete');
+         });*/
     };
 
     this.describe = function (opts) {
