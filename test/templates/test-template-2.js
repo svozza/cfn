@@ -27,7 +27,7 @@ module.exports = {
                     ReadCapacityUnits: '1',
                     WriteCapacityUnits: '1'
                 },
-                TableName: 'TEST-TABLE'
+                TableName: 'TEST-TABLE-2'
             }
         },
         testDns: {
