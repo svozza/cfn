@@ -10,6 +10,12 @@
     "type": "git",
     "url": "git+https://github.com/Nordstrom/cfn.git"
   },
+  "files": [
+    "index.js",
+    "LICENSE",
+    "package.json",
+    "README.md"
+  ],
   "keywords": [
     "Cloud",
     "Formation",

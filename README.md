@@ -30,5 +30,3 @@ cfn('Foo-Bar', 'template.json');
 cfn.delete('Foo-Bar');
 
 ```
-    
-    
