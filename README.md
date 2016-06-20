@@ -1,6 +1,6 @@
 # cfn - Simple Cloud Formation for Node.js
 
-![CircleCI](https://circleci.com/gh/Nordstrom/cfn.svg?style=shield)
+[![CircleCI](https://circleci.com/gh/Nordstrom/cfn.svg?style=shield)](https://circleci.com/gh/Nordstrom/cfn) [![bitHound Overall Score](https://www.bithound.io/github/Nordstrom/cfn/badges/score.svg)](https://www.bithound.io/github/Nordstrom/cfn)
 
 ## Install
 ```
