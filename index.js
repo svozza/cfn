@@ -17,6 +17,8 @@ var Promise = require('bluebird'),
     get = require('lodash/fp/get'),
     mapValues = require('lodash/fp/mapValues'),
     colors = require('colors'),
+    HttpsProxyAgent = require('https-proxy-agent'),
+    PROXY = process.env.PROXY,
 
     success = [
         'CREATE_COMPLETE',
@@ -73,6 +75,9 @@ var Promise = require('bluebird'),
     };
 
 function Cfn(name, template) {
+    AWS.config.httpOptions = {
+        agent: PROXY ? new HttpsProxyAgent(PROXY) : undefined
+    };
     var cf = Promise.promisifyAll(new AWS.CloudFormation()),
         log = console.log,
         opts = _.isPlainObject(name) ? name : {},
