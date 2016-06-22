@@ -88,7 +88,7 @@ function Cfn(name, template) {
 
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
-            notExists = /ValidationError: Stack \.+ does not exist/,
+            notExists = /ValidationError:\s+Stack\s+.+\s+does not exist/,
             displayedEvents = {};
 
         return new Promise(function (resolve, reject) {
