@@ -58,6 +58,7 @@ var Promise = require('bluebird'),
         'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS': 'green',
         'UPDATE_ROLLBACK_IN_PROGRESS': 'yellow',
         'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS': 'yellow',
+        'UPDATE_ROLLBACK_FAILED': 'red',
         'UPDATE_ROLLBACK_COMPLETE': 'red',
         'UPDATE_FAILED': 'red'
     },
