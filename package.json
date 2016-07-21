@@ -1,6 +1,6 @@
 {
   "name": "cfn",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
@@ -23,10 +23,19 @@
   "xo": {
     "space": 4,
     "rules": {
-      "max-lines": ["warn", 400],
-      "babel/object-curly-spacing": ["error", "always"],
+      "max-lines": [
+        "warn",
+        400
+      ],
+      "babel/object-curly-spacing": [
+        "error",
+        "always"
+      ],
       "one-var": "off",
-      "operator-linebreak": ["error", "before"]
+      "operator-linebreak": [
+        "error",
+        "before"
+      ]
     }
   },
   "keywords": [
