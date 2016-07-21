@@ -11,9 +11,6 @@
     "type": "git",
     "url": "git+https://github.com/Nordstrom/cfn.git"
   },
-  "bin": {
-    "cfn": "cli"
-  },
   "files": [
     "index.js",
     "LICENSE",
