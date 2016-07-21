@@ -4,7 +4,8 @@
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/.bin/xo && node test | tap-spec"
+    "test": "node node_modules/.bin/xo",
+    "tape": "node test | tap-spec"
   },
   "repository": {
     "type": "git",
