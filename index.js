@@ -76,7 +76,9 @@ var Promise = require('bluebird'),
     };
 
 function Cfn(name, template) {
-
+    AWS.config.httpOptions = {
+        agent: PROXY ? new HttpsProxyAgent(PROXY) : undefined
+    };
     var cf = Promise.promisifyAll(new AWS.CloudFormation()),
         log = console.log,
         opts = _.isPlainObject(name) ? name : {},
@@ -86,10 +88,6 @@ function Cfn(name, template) {
     if (awsConfig) {
         // console.log('awsConfig= ', awsConfig);
         AWS.config.update(awsConfig);
-    } else {
-        AWS.config.httpOptions = {
-            agent: PROXY ? new HttpsProxyAgent(PROXY) : undefined
-        };
     }
     // console.log('AWS config:', JSON.stringify(AWS.config));
 
