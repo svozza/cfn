@@ -82,7 +82,12 @@ function Cfn(name, template) {
     var cf = Promise.promisifyAll(new AWS.CloudFormation()),
         log = console.log,
         opts = _.isPlainObject(name) ? name : {},
-        params = opts.params;
+        params = opts.params,
+        awsConfig = opts.awsConfig;
+
+    if (awsConfig) {
+        AWS.config.update(awsConfig);
+    }
 
     name = opts.name || name;
     template = opts.template || template;
