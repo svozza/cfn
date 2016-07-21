@@ -30,16 +30,9 @@ module.exports = {
                 TableName: 'TEST-TABLE-2'
             }
         },
-        testDns: {
-            Type: 'AWS::Route53::RecordSet',
-            Properties: {
-                HostedZoneId: 'Z36ZPHHEG9SJZC',
-                Name: 'test-cfn.andyday.io',
-                Comment: 'Test Dns',
-                Type: 'CNAME',
-                TTL: 60,
-                ResourceRecords: ['google.com']
-            }
+        testSqs: {
+            Type: 'AWS::SQS::Queue',
+            Properties: {}
         }
     }
 };

@@ -1,14 +1,27 @@
-# cfn - Simple Cloud Formation for Node.js
-
 [![CircleCI](https://circleci.com/gh/Nordstrom/cfn.svg?style=shield)](https://circleci.com/gh/Nordstrom/cfn) [![bitHound Overall Score](https://www.bithound.io/github/Nordstrom/cfn/badges/score.svg)](https://www.bithound.io/github/Nordstrom/cfn)
 
-## Install
+cfn makes the following Cloud Formation tasks simpler.
+##### Create / Update Stack
+* If the stack already exists, it Updates; otherwise, it Creates.
+* Monitors stack progress, logging events.
+* Returns a Promises.  Resolves when stack Create / Update is done, Rejects if there is an error.
+
+##### Delete Stack
+* Monitors stack progress, logging events.
+* Returns a Promises.  Resolves when stack Create / Update is done, Rejects if there is an error.
+
+##### Cleanup Stacks
+* Use regex pattern to delete stacks.
+* Include `daysOld` to delete stacks this old.
+    
+# Install
 ```
 $ npm install cfn --save-dev
 ```
 
-## Usage
+# Usage
 
+## Create / Update
 Use cfn to create or update a Cloud Formation stack.  It returns a promise.  You can use Node.js modules or standard 
 json for Cloud Formation Templates.
 
@@ -26,7 +39,85 @@ cfn('Foo-Bar', __dirname + '/template.js')
 // Create or update the Foo-Bar stack with the template.json json template.
 cfn('Foo-Bar', 'template.json');
 
+```
+
+## Delete
+Delete a stack.
+
+```javascript
 // Delete the Foo-Bar stack
 cfn.delete('Foo-Bar');
-
 ```
+
+## Cleanup
+Cleanup stacks based on regex and daysOld.
+
+```javascript
+// Delete stacks starting with TEST- that are 3 days old or more
+cfn.cleanup(/TEST-/, 3)
+    .then(function() {
+        console.log('done')
+    });
+```
+
+# API
+
+## cfn(options[, template])
+Creates or Updates a stack if it already exists.  Logs events and returns a Promise.
+
+### options
+If this is a string it is used as the **name**.
+
+#### options.name
+Name of stack
+
+#### options.template
+Path to template (json or js file).  If the optional second argument is passed in it
+will override this.
+
+#### options.params
+This is an object that gets passed to function templates.  For example this .js template
+```javascript
+module.exports = function (params) {
+    return {
+        AWSTemplateFormatVersion: '2010-09-09',
+        Description: 'Test Stack',
+        Resources: {
+            testTable: {
+                Type: 'AWS::DynamoDB::Table',
+                Properties: {
+                    ...
+                    TableName: 'FOO-TABLE-' + params.env
+                }
+            }
+        }
+    };
+};
+```
+
+Could be deployed as follows
+```javascript
+cfn({
+    name: 'Test-Stack',
+    template: 'template.js',
+    params: { env: 'dev' }
+});
+```
+
+#### options.awsConfig
+This allows you to pass any [config properties allowed by the AWS Node.js SDK](http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/node-configuring.html)
+
+```javascript
+cfn({
+    name: 'Foo-Bar',
+    template: _dirname + '/template.js',
+    awsConfig: { 
+        region: 'us-west-2'
+        accessKeyId: 'akid', 
+        secretAccessKey: 'secret'
+    }
+}).then(function() {
+    console.log('done');
+});
+```
+

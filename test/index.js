@@ -1,27 +1,17 @@
 'use strict';
 
+var path = require('path');
+
 var tape = require('blue-tape'),
-    cfn = require('../'),
     Promise = require('bluebird'),
-    AWS = require('aws-sdk'),
-    cf = Promise.promisifyAll(new AWS.CloudFormation());
+    AWS = require('aws-sdk');
 
-function test(name, stackName, fn) {
-    return cf.describeStacksAsync({ StackName: stackName })
-        .then(function () {
-            return cfn.delete(stackName);
-        })
-        .catch(function () {
-            return Promise.resolve();
-        })
-        .then(function () {
-            console.log('Start... ', name, stackName);
-            return tape(name, fn);
-        });
-}
+var cfn = require('../');
 
-test('Create json template', 'TEST-JSON-TEMPLATE', function (t) {
-    return cfn('TEST-JSON-TEMPLATE', __dirname + '/templates/test-template-1.json')
+var cf = Promise.promisifyAll(new AWS.CloudFormation());
+
+tape('Create / Update json template', 'TEST-JSON-TEMPLATE', function (t) {
+    return cfn('TEST-JSON-TEMPLATE', path.join(__dirname, '/templates/test-template-1.json'))
         .then(function () {
             return cf.describeStacksAsync({ StackName: 'TEST-JSON-TEMPLATE' });
         })
@@ -31,8 +21,8 @@ test('Create json template', 'TEST-JSON-TEMPLATE', function (t) {
         });
 });
 
-test('Create js template', 'TEST-JS-TEMPLATE', function (t) {
-    return cfn('TEST-JS-TEMPLATE', __dirname + '/templates/test-template-2.js')
+tape('Create / Update js template', 'TEST-JS-TEMPLATE', function (t) {
+    return cfn('TEST-JS-TEMPLATE', path.join(__dirname, '/templates/test-template-2.js'))
         .then(function () {
             return cf.describeStacksAsync({ StackName: 'TEST-JS-TEMPLATE' });
         })
@@ -42,11 +32,11 @@ test('Create js template', 'TEST-JS-TEMPLATE', function (t) {
         });
 });
 
-test('Create js function template', 'TEST-JS-FN-TEMPLATE', function (t) {
+tape('Create / Update js function template', 'TEST-JS-FN-TEMPLATE', function (t) {
     return cfn({
         name: 'TEST-JS-FN-TEMPLATE',
-        template: __dirname + '/templates/test-template-3.js',
-        params: { testParam: 'TEST-PARAM'}
+        template: path.join(__dirname, '/templates/test-template-3.js'),
+        params: { testParam: 'TEST-PARAM' }
     })
         .then(function () {
             return cf.describeStacksAsync({ StackName: 'TEST-JS-FN-TEMPLATE' });
@@ -55,4 +45,8 @@ test('Create js function template', 'TEST-JS-FN-TEMPLATE', function (t) {
             t.equal(data.Stacks[0].StackName, 'TEST-JS-FN-TEMPLATE', 'Stack Name Matches');
             t.equal(data.Stacks[0].StackStatus, 'CREATE_COMPLETE', 'Stack Status is correct');
         });
+});
+
+tape('Cleanup js stacks', function () {
+    return cfn.cleanup(/TEST-JS-/);
 });

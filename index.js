@@ -6,8 +6,9 @@
  * synchronous.
  */
 
+var filesystem = require('fs');
+
 var Promise = require('bluebird'),
-    fs = Promise.promisifyAll(require('fs')),
     AWS = require('aws-sdk'),
     _ = require('lodash'),
     sprintf = require('sprintf'),
@@ -16,9 +17,14 @@ var Promise = require('bluebird'),
     keyBy = require('lodash/fp/keyBy'),
     get = require('lodash/fp/get'),
     mapValues = require('lodash/fp/mapValues'),
-    colors = require('colors'),
-    HttpsProxyAgent = require('https-proxy-agent'),
-    PROXY = process.env.PROXY,
+    chalk = require('chalk'),
+    HttpsProxyAgent = require('https-proxy-agent');
+
+var fs = Promise.promisifyAll(filesystem);
+
+var PROXY = process.env.PROXY,
+
+    ONE_DAY = 86400000,
 
     success = [
         'CREATE_COMPLETE',
@@ -44,35 +50,29 @@ var Promise = require('bluebird'),
     ],
 
     colorMap = {
-        'CREATE_IN_PROGRESS': 'gray',
-        'CREATE_COMPLETE': 'green',
-        'CREATE_FAILED': 'red',
-        'DELETE_IN_PROGRESS': 'gray',
-        'DELETE_COMPLETE': 'green',
-        'DELETE_FAILED': 'red',
-        'ROLLBACK_FAILED': 'red',
-        'ROLLBACK_IN_PROGRESS': 'yellow',
-        'ROLLBACK_COMPLETE': 'red',
-        'UPDATE_IN_PROGRESS': 'gray',
-        'UPDATE_COMPLETE': 'green',
-        'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS': 'green',
-        'UPDATE_ROLLBACK_IN_PROGRESS': 'yellow',
-        'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS': 'yellow',
-        'UPDATE_ROLLBACK_FAILED': 'red',
-        'UPDATE_ROLLBACK_COMPLETE': 'red',
-        'UPDATE_FAILED': 'red'
+        CREATE_IN_PROGRESS: 'gray',
+        CREATE_COMPLETE: 'green',
+        CREATE_FAILED: 'red',
+        DELETE_IN_PROGRESS: 'gray',
+        DELETE_COMPLETE: 'green',
+        DELETE_FAILED: 'red',
+        ROLLBACK_FAILED: 'red',
+        ROLLBACK_IN_PROGRESS: 'yellow',
+        ROLLBACK_COMPLETE: 'red',
+        UPDATE_IN_PROGRESS: 'gray',
+        UPDATE_COMPLETE: 'green',
+        UPDATE_COMPLETE_CLEANUP_IN_PROGRESS: 'green',
+        UPDATE_ROLLBACK_IN_PROGRESS: 'yellow',
+        UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS: 'yellow',
+        UPDATE_ROLLBACK_FAILED: 'red',
+        UPDATE_ROLLBACK_COMPLETE: 'red',
+        UPDATE_FAILED: 'red'
     },
 
     ings = {
-        'create': 'Creating',
-        'delete': 'Deleting',
-        'update': 'Updating'
-    },
-
-    eds = {
-        'create': 'Created',
-        'delete': 'Deleted',
-        'update': 'Updated'
+        create: 'Creating',
+        delete: 'Deleting',
+        update: 'Updating'
     };
 
 function Cfn(name, template) {
@@ -82,6 +82,7 @@ function Cfn(name, template) {
     var cf = Promise.promisifyAll(new AWS.CloudFormation()),
         log = console.log,
         opts = _.isPlainObject(name) ? name : {},
+        startedAt = Date.now(),
         params = opts.params;
 
     name = opts.name || name;
@@ -89,7 +90,8 @@ function Cfn(name, template) {
 
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
-            notExists = /ValidationError:\s+Stack\s+.+\s+does not exist/,
+            // PERSIS-ROTIS-45215-MASTER-DB DELETE Failed: ValidationError: Stack [PERSIS-ROTIS-45215-MASTER-DB] does not exist
+            notExists = /ValidationError:\s+Stack\s+\[?.+]?\s+does not exist/,
             displayedEvents = {};
 
         return new Promise(function (resolve, reject) {
@@ -110,17 +112,20 @@ function Cfn(name, template) {
             function _processEvents(events) {
                 events = _.sortBy(events, 'Timestamp');
                 _.forEach(events, function (event) {
+                    var timestamp = moment(event.Timestamp);
                     displayedEvents[event.EventId] = true;
-                    // log(event);
-                    log(sprintf('[%s] %s %s: %s - %s  %s  %s',
-                        moment(event.Timestamp).format('HH:mm:ss').gray,
-                        ings[action],
-                        name.cyan,
-                        event.ResourceType,
-                        event.LogicalResourceId,
-                        colors[colorMap[event.ResourceStatus]](event.ResourceStatus),
-                        event.ResourceStatusReason || ''
-                    ));
+                    // log(event.Timestamp);
+                    if (timestamp.valueOf() >= startedAt) {
+                        log(sprintf('[%s] %s %s: %s - %s  %s  %s',
+                            chalk.gray(timestamp.format('HH:mm:ss')),
+                            ings[action],
+                            chalk.cyan(name),
+                            event.ResourceType,
+                            event.LogicalResourceId,
+                            chalk[colorMap[event.ResourceStatus]](event.ResourceStatus),
+                            event.ResourceStatusReason || ''
+                        ));
+                    }
                 });
 
                 var lastEvent = _.last(events) || {},
@@ -149,13 +154,11 @@ function Cfn(name, template) {
                 running = true;
 
                 (function loop() {
-                    // log('loop:', logPrefix, done, next ? '(' + next + ')' : '');
                     cf.describeStackEvents({
                         StackName: name,
                         NextToken: next
                     }, function (err, data) {
                         try {
-                            // log('events:', logPrefix, err, !!data);
                             if (err && notExists.test(err)) {
                                 return _success();
                             }
@@ -172,14 +175,13 @@ function Cfn(name, template) {
                                 }
                                 events.push(event);
                             });
-                            if (!done) {
-                                loop();
-                            } else {
+                            if (done) {
                                 _processEvents(events);
-                                // _describeStack();
+                            } else {
+                                loop();
                             }
-                        } catch (e) {
-                            _failure(e);
+                        } catch (err) {
+                            _failure(err);
                         }
                     });
                 })();
@@ -198,6 +200,7 @@ function Cfn(name, template) {
     }
 
     function processCfStack(action, cfparms) {
+        startedAt = Date.now();
         if (action === 'update') {
             return cf.updateStackAsync(cfparms)
                 .catch(function (err) {
@@ -210,10 +213,11 @@ function Cfn(name, template) {
     }
 
     function loadJs(path) {
-        var tmpl = require(path),
-            fn = _.isFunction(tmpl) ? tmpl : function () {
-                return tmpl;
-            };
+        var tmpl = require(path);
+
+        var fn = _.isFunction(tmpl) ? tmpl : function () {
+            return tmpl;
+        };
         return Promise.resolve(JSON.stringify(fn(params)));
     }
 
@@ -240,21 +244,11 @@ function Cfn(name, template) {
             });
     };
 
-    this.delete = function () {
+    this.delete = function (name) {
+        startedAt = Date.now();
         return cf.deleteStackAsync({ StackName: name })
             .then(function () {
                 return checkStack('delete', name);
-            });
-        /*
-         .then(function () {
-         return cf.waitForAsync('stackDeleteComplete');
-         });*/
-    };
-
-    this.describe = function (opts) {
-        return cf.describeStacksAsync(opts)
-            .then(function (data) {
-                log(data);
             });
     };
 
@@ -269,10 +263,12 @@ function Cfn(name, template) {
             });
     };
 
-    this.cleanup = function (prefix, olderThan, notIn) {
-        var next,
+    this.cleanup = function (regex, daysOld) {
+        var self = this,
+            next,
             done = false;
 
+        startedAt = Date.now();
         return (function loop() {
             if (!done) {
                 return cf.listStacksAsync({
@@ -287,32 +283,33 @@ function Cfn(name, template) {
                     ]
                 })
                     .then(function (data) {
-                        // log(data);
                         next = data.NextToken;
                         done = !next;
                         return data.StackSummaries;
                     })
-                    .each(function (stack) {
-                        if (_.startsWith(stack.StackName, prefix) && !_.includes(notIn, stack.StackName) &&
-                            stack.CreationTime < olderThan) {
-
+                    .map(function (stack) {
+                        if (regex.test(stack.StackName) && stack.CreationTime < (Date.now() - ((daysOld || 0) * ONE_DAY))) {
                             log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
 
-                            return deleteStack({ StackName: stack.StackName });
+                            return self.delete(stack.StackName)
+                                .catch(function (err) {
+                                    log('DELETE ERR: ', err);
+                                });
                         }
+                        return null;
                     })
                     .then(loop);
             }
             return Promise.resolve();
         })();
-    }
+    };
 }
 
 var cfn = function (name, template) {
     return new Cfn(name, template).createOrUpdate();
 };
 
-cfn.createOrUpdate = function (name, template) {
+cfn.create = function (name, template) {
     return new Cfn(name, template).create();
 };
 
@@ -322,6 +319,10 @@ cfn.delete = function (name) {
 
 cfn.outputs = function (name) {
     return new Cfn(name).outputs();
+};
+
+cfn.cleanup = function (regex, daysOld) {
+    return new Cfn().cleanup(regex, daysOld);
 };
 
 module.exports = cfn;

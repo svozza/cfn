@@ -4,7 +4,7 @@
  * Main Stack Cloud Formation Module
  */
 
-module.exports = function(params) {
+module.exports = function (params) {
     return {
         AWSTemplateFormatVersion: '2010-09-09',
         Description: 'Test Stack',
@@ -32,5 +32,5 @@ module.exports = function(params) {
                 }
             }
         }
-    }
+    };
 };
