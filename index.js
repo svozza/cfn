@@ -83,14 +83,18 @@ function Cfn(name, template) {
         log = console.log,
         opts = _.isPlainObject(name) ? name : {},
         startedAt = Date.now(),
-        params = opts.params;
+        params = opts.params,
+        awsConfig = opts.awsConfig;
+
+    if (awsConfig) {
+        AWS.config.update(awsConfig);
+    }
 
     name = opts.name || name;
     template = opts.template || template;
 
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
-            // PERSIS-ROTIS-45215-MASTER-DB DELETE Failed: ValidationError: Stack [PERSIS-ROTIS-45215-MASTER-DB] does not exist
             notExists = /ValidationError:\s+Stack\s+\[?.+]?\s+does not exist/,
             displayedEvents = {};
 
