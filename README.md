@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/Nordstrom/cfn.svg?style=shield)](https://circleci.com/gh/Nordstrom/cfn) [![bitHound Overall Score](https://www.bithound.io/github/Nordstrom/cfn/badges/score.svg)](https://www.bithound.io/github/Nordstrom/cfn)
+# cfn [![CircleCI](https://circleci.com/gh/Nordstrom/cfn.svg?style=shield)](https://circleci.com/gh/Nordstrom/cfn) [![bitHound Overall Score](https://www.bithound.io/github/Nordstrom/cfn/badges/score.svg)](https://www.bithound.io/github/Nordstrom/cfn)
 
 cfn makes the following Cloud Formation tasks simpler.
 ##### Create / Update Stack
@@ -14,14 +14,14 @@ cfn makes the following Cloud Formation tasks simpler.
 * Use regex pattern to delete stacks.
 * Include `daysOld` to delete stacks this old.
     
-# Install
+## Install
 ```
 $ npm install cfn --save-dev
 ```
 
-# Usage
+## Usage
 
-## Create / Update
+### Create / Update
 Use cfn to create or update a Cloud Formation stack.  It returns a promise.  You can use Node.js modules or standard 
 json for Cloud Formation Templates.
 
@@ -41,7 +41,7 @@ cfn('Foo-Bar', 'template.json');
 
 ```
 
-## Delete
+### Delete
 Delete a stack.
 
 ```javascript
@@ -49,7 +49,7 @@ Delete a stack.
 cfn.delete('Foo-Bar');
 ```
 
-## Cleanup
+### Cleanup
 Cleanup stacks based on regex and daysOld.
 
 ```javascript
@@ -60,22 +60,28 @@ cfn.cleanup(/TEST-/, 3)
     });
 ```
 
-# API
+## API
 
-## cfn(options[, template])
+### cfn(name|options[, template])
 Creates or Updates a stack if it already exists.  Logs events and returns a Promise.
 
-### options
-If this is a string it is used as the **name**.
+#### name
+The name of the stack to Create / Update.  If the first arg is a string it is used as name.
 
-#### options.name
+#### options
+Options object.  If the first arg is an object it will be used as options.
+
+#### template
+Path to the template (js or json file).  This is optional and if given will override options.template (if present).  This arg is helpful if the first arg is the name of the template rather than an options object.
+
+##### options.name
 Name of stack
 
-#### options.template
+##### options.template
 Path to template (json or js file).  If the optional second argument is passed in it
 will override this.
 
-#### options.params
+##### options.params
 This is an object that gets passed to function templates.  For example this .js template
 ```javascript
 module.exports = function (params) {
@@ -104,7 +110,7 @@ cfn({
 });
 ```
 
-#### options.awsConfig
+##### options.awsConfig
 This allows you to pass any [config properties allowed by the AWS Node.js SDK](http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/node-configuring.html)
 
 ```javascript
