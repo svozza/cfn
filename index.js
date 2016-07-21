@@ -86,10 +86,8 @@ function Cfn(name, template) {
         awsConfig = opts.awsConfig;
 
     if (awsConfig) {
-        // console.log('awsConfig= ', awsConfig);
         AWS.config.update(awsConfig);
     }
-    // console.log('AWS config:', JSON.stringify(AWS.config));
 
     name = opts.name || name;
     template = opts.template || template;
