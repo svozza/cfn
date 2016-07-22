@@ -76,19 +76,22 @@ var PROXY = process.env.PROXY,
     };
 
 function Cfn(name, template) {
-    AWS.config.httpOptions = {
-        agent: PROXY ? new HttpsProxyAgent(PROXY) : undefined
-    };
-    var cf = Promise.promisifyAll(new AWS.CloudFormation()),
-        log = console.log,
+
+    var log = console.log,
         opts = _.isPlainObject(name) ? name : {},
         startedAt = Date.now(),
         params = opts.params,
         awsConfig = opts.awsConfig;
 
+    AWS.config.httpOptions = {
+        agent: PROXY ? new HttpsProxyAgent(PROXY) : undefined
+    };
     if (awsConfig) {
         AWS.config.update(awsConfig);
     }
+
+    // initialize cf
+    var cf = Promise.promisifyAll(new AWS.CloudFormation());
 
     name = opts.name || name;
     template = opts.template || template;
