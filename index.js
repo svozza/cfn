@@ -76,7 +76,6 @@ var PROXY = process.env.PROXY,
     };
 
 function Cfn(name, template) {
-
     var log = console.log,
         opts = _.isPlainObject(name) ? name : {},
         startedAt = Date.now(),
