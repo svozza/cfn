@@ -272,7 +272,7 @@ function Cfn(name, template) {
             });
     };
 
-    this.cleanup = function (regex, daysOld) {
+    this.cleanup = function (regex, daysOld, dryRun) {
         var self = this,
             next,
             done = false;
@@ -300,10 +300,12 @@ function Cfn(name, template) {
                         if (regex.test(stack.StackName) && stack.CreationTime < (Date.now() - ((daysOld || 0) * ONE_DAY))) {
                             log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
 
-                            return self.delete(stack.StackName)
-                                .catch(function (err) {
-                                    log('DELETE ERR: ', err);
-                                });
+                            if (!dryRun) {
+                                return self.delete(stack.StackName)
+                                    .catch(function (err) {
+                                        log('DELETE ERR: ', err);
+                                    });
+                            }
                         }
                         return null;
                     })
