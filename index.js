@@ -250,7 +250,7 @@ function Cfn(name, template) {
             });
     };
 
-    this.delete = function (name) {
+    this.delete = function () {
         startedAt = Date.now();
         return cf.deleteStackAsync({ StackName: name })
             .then(function () {
