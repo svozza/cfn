@@ -80,17 +80,20 @@ function Cfn(name, template) {
         opts = _.isPlainObject(name) ? name : {},
         startedAt = Date.now(),
         params = opts.params,
-        awsConfig = opts.awsConfig;
+        awsConfig = opts.awsConfig,
+        awsOpts = {};
 
-    AWS.config.httpOptions = {
-        agent: PROXY ? new HttpsProxyAgent(PROXY) : undefined
-    };
+    if (PROXY) {
+        awsOpts.httpOptions = {
+            agent: new HttpsProxyAgent(PROXY)
+        };
+    }
     if (awsConfig) {
-        AWS.config.update(awsConfig);
+        _.merge(awsOpts, awsConfig);
     }
 
     // initialize cf
-    var cf = Promise.promisifyAll(new AWS.CloudFormation());
+    var cf = Promise.promisifyAll(new AWS.CloudFormation(awsOpts));
 
     name = opts.name || name;
     template = opts.template || template;
@@ -250,11 +253,11 @@ function Cfn(name, template) {
             });
     };
 
-    this.delete = function () {
+    this.delete = function (overrideName) {
         startedAt = Date.now();
-        return cf.deleteStackAsync({ StackName: name })
+        return cf.deleteStackAsync({ StackName: overrideName || name })
             .then(function () {
-                return checkStack('delete', name);
+                return checkStack('delete', overrideName || name);
             });
     };
 
