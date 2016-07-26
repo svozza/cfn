@@ -332,8 +332,8 @@ cfn.outputs = function (name) {
     return new Cfn(name).outputs();
 };
 
-cfn.cleanup = function (regex, daysOld) {
-    return new Cfn().cleanup(regex, daysOld);
+cfn.cleanup = function (regex, daysOld, dryRun) {
+    return new Cfn().cleanup(regex, daysOld, dryRun);
 };
 
 module.exports = cfn;
