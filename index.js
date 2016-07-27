@@ -126,6 +126,7 @@ function Cfn(name, template) {
                     }),
                     'Timestamp');
                 _.forEach(events, function (event) {
+                    displayedEvents[event.EventId] = true;
                     log(sprintf('[%s] %s %s: %s - %s  %s  %s',
                         chalk.gray(moment(event.Timestamp).format('HH:mm:ss')),
                         ings[action],
