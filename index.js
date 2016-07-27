@@ -119,22 +119,22 @@ function Cfn(name, template) {
             }
 
             function _processEvents(events) {
-                events = _.sortBy(events, 'Timestamp');
+                events = _.sortBy(
+                    _.filter(events, function (e) {
+                        var timestamp = moment(e.Timestamp);
+                        return timestamp.valueOf() >= startedAt;
+                    }),
+                    'Timestamp');
                 _.forEach(events, function (event) {
-                    var timestamp = moment(event.Timestamp);
-                    displayedEvents[event.EventId] = true;
-                    // log(event.Timestamp);
-                    if (timestamp.valueOf() >= startedAt) {
-                        log(sprintf('[%s] %s %s: %s - %s  %s  %s',
-                            chalk.gray(timestamp.format('HH:mm:ss')),
-                            ings[action],
-                            chalk.cyan(name),
-                            event.ResourceType,
-                            event.LogicalResourceId,
-                            chalk[colorMap[event.ResourceStatus]](event.ResourceStatus),
-                            event.ResourceStatusReason || ''
-                        ));
-                    }
+                    log(sprintf('[%s] %s %s: %s - %s  %s  %s',
+                        chalk.gray(timestamp.format('HH:mm:ss')),
+                        ings[action],
+                        chalk.cyan(name),
+                        event.ResourceType,
+                        event.LogicalResourceId,
+                        chalk[colorMap[event.ResourceStatus]](event.ResourceStatus),
+                        event.ResourceStatusReason || ''
+                    ));
                 });
 
                 var lastEvent = _.last(events) || {},
@@ -142,7 +142,9 @@ function Cfn(name, template) {
                     status = lastEvent.ResourceStatus,
                     statusReason = lastEvent.ResourceStatusReason;
 
-                if (resourceType !== 'AWS::CloudFormation::Stack') {
+                if (events.length <= 0) {
+                    _success();
+                } else if (resourceType !== 'AWS::CloudFormation::Stack') {
                     // Do nothing
                 } else if (_.includes(failed, status)) {
                     _failure(statusReason);
