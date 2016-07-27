@@ -120,14 +120,14 @@ function Cfn(name, template) {
 
             function _processEvents(events) {
                 events = _.sortBy(
-                    _.filter(events, function (e) {
-                        var timestamp = moment(e.Timestamp);
+                    _.filter(events, function (event) {
+                        var timestamp = moment(event.Timestamp);
                         return timestamp.valueOf() >= startedAt;
                     }),
                     'Timestamp');
                 _.forEach(events, function (event) {
                     log(sprintf('[%s] %s %s: %s - %s  %s  %s',
-                        chalk.gray(timestamp.format('HH:mm:ss')),
+                        chalk.gray(moment(event.Timestamp).format('HH:mm:ss')),
                         ings[action],
                         chalk.cyan(name),
                         event.ResourceType,
