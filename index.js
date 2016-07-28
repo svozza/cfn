@@ -119,36 +119,36 @@ function Cfn(name, template) {
             }
 
             function _processEvents(events) {
-                events = _.sortBy(
-                    _.filter(events, function (event) {
-                        var timestamp = moment(event.Timestamp);
-                        return timestamp.valueOf() >= startedAt;
-                    }),
-                    'Timestamp');
+                events = _.sortBy(events, 'Timestamp');
                 _.forEach(events, function (event) {
                     displayedEvents[event.EventId] = true;
-                    log(sprintf('[%s] %s %s: %s - %s  %s  %s',
-                        chalk.gray(moment(event.Timestamp).format('HH:mm:ss')),
-                        ings[action],
-                        chalk.cyan(name),
-                        event.ResourceType,
-                        event.LogicalResourceId,
-                        chalk[colorMap[event.ResourceStatus]](event.ResourceStatus),
-                        event.ResourceStatusReason || ''
-                    ));
+                    if (moment(event.Timestamp).valueOf() >= startedAt) {
+                        log(sprintf('[%s] %s %s: %s - %s  %s  %s',
+                            chalk.gray(moment(event.Timestamp).format('HH:mm:ss')),
+                            ings[action],
+                            chalk.cyan(name),
+                            event.ResourceType,
+                            event.LogicalResourceId,
+                            chalk[colorMap[event.ResourceStatus]](event.ResourceStatus),
+                            event.ResourceStatusReason || ''
+                        ));
+                    }
                 });
 
                 var lastEvent = _.last(events) || {},
+                    timestamp = moment(lastEvent.Timestamp).valueOf(),
                     resourceType = lastEvent.ResourceType,
                     status = lastEvent.ResourceStatus,
                     statusReason = lastEvent.ResourceStatusReason;
 
-                if (events.length <= 0) {
-                    _success();
-                } else if (resourceType !== 'AWS::CloudFormation::Stack') {
+                if (resourceType !== 'AWS::CloudFormation::Stack') {
                     // Do nothing
                 } else if (_.includes(failed, status)) {
-                    _failure(statusReason);
+                    if (timestamp >= startedAt) {
+                        _failure(statusReason);
+                    } else {
+                        _success();
+                    }
                 } else if (_.includes(success, status)) {
                     _success();
                 }
