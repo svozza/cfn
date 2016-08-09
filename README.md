@@ -54,7 +54,10 @@ Cleanup stacks based on regex and daysOld.
 
 ```javascript
 // Delete stacks starting with TEST- that are 3 days old or more
-cfn.cleanup(/TEST-/, 3)
+cfn.cleanup({
+    regex: /TEST-/, 
+    minutesOld: 60
+})
     .then(function() {
         console.log('done')
     });

@@ -24,7 +24,7 @@ var fs = Promise.promisifyAll(filesystem);
 
 var PROXY = process.env.PROXY,
 
-    ONE_DAY = 86400000,
+    ONE_MINUTE = 60000,
 
     success = [
         'CREATE_COMPLETE',
@@ -256,11 +256,11 @@ function Cfn(name, template) {
             });
     };
 
-    this.delete = function (overrideName) {
+    this.delete = function (overrideName, async) {
         startedAt = Date.now();
         return cf.deleteStackAsync({ StackName: overrideName || name })
             .then(function () {
-                return checkStack('delete', overrideName || name);
+                return async ? Promise.resolve() : checkStack('delete', overrideName || name);
             });
     };
 
@@ -275,10 +275,15 @@ function Cfn(name, template) {
             });
     };
 
-    this.cleanup = function (regex, daysOld, dryRun) {
+    this.cleanup = function (opts) {
         var self = this,
+            regex = opts.regex,
+            minutesOld = opts.minutesOld,
+            dryRun = opts.dryRun,
+            async = opts.async,
             next,
-            done = false;
+            done = false,
+            stacks = [];
 
         startedAt = Date.now();
         return (function loop() {
@@ -299,23 +304,26 @@ function Cfn(name, template) {
                         done = !next;
                         return data.StackSummaries;
                     })
-                    .map(function (stack) {
-                        if (regex.test(stack.StackName) && stack.CreationTime < (Date.now() - ((daysOld || 0) * ONE_DAY))) {
-                            log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
-
-                            if (!dryRun) {
-                                return self.delete(stack.StackName)
-                                    .catch(function (err) {
-                                        log('DELETE ERR: ', err);
-                                    });
-                            }
+                    .each(function (stack) {
+                        if (regex.test(stack.StackName) && stack.CreationTime < (Date.now() - ((minutesOld || 0) * ONE_MINUTE))) {
+                            stacks.push(stack);
                         }
-                        return null;
-                    })
-                    .then(loop);
+                    });
             }
             return Promise.resolve();
-        })();
+        })()
+            .then(function () {
+                _.forEach(stacks, function (stack) {
+                    log((dryRun ? 'Will clean up ' : 'Cleaning up ') + stack.StackName + ' Created ' + stack.CreationTime);
+
+                    if (!dryRun) {
+                        return self.delete(stack.StackName, async)
+                            .catch(function (err) {
+                                log('DELETE ERR: ', err);
+                            });
+                    }
+                });
+            });
     };
 }
 
