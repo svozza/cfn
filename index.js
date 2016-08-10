@@ -308,18 +308,22 @@ function Cfn(name, template) {
                         if (regex.test(stack.StackName) && stack.CreationTime < (Date.now() - ((minutesOld || 0) * ONE_MINUTE))) {
                             stacks.push(stack);
                         }
-                    });
+                    })
+                    .then(function() {
+                        return loop();
+                    })
             }
             return Promise.resolve();
         })()
             .then(function () {
                 _.forEach(stacks, function (stack) {
-                    log((dryRun ? 'Will clean up ' : 'Cleaning up ') + stack.StackName + ' Created ' + stack.CreationTime);
-
-                    if (!dryRun) {
+                    if (dryRun) {
+                        log('Will clean up ' + stack.StackName + ' Created ' + stack.CreationTime);
+                    } else {
+                        log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
                         return self.delete(stack.StackName, async)
                             .catch(function (err) {
-                                log('DELETE ERR: ', err);
+                                log('DELETE ERROR: ', err);
                             });
                     }
                 });
