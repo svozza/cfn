@@ -309,9 +309,9 @@ function Cfn(name, template) {
                             stacks.push(stack);
                         }
                     })
-                    .then(function() {
+                    .then(function () {
                         return loop();
-                    })
+                    });
             }
             return Promise.resolve();
         })()
