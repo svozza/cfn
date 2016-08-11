@@ -81,6 +81,7 @@ function Cfn(name, template) {
         startedAt = Date.now(),
         params = opts.params,
         awsConfig = opts.awsConfig,
+        capabilities = opts.capabilities | ['CAPABILITY_IAM'],
         awsOpts = {};
 
     if (PROXY) {
@@ -240,7 +241,7 @@ function Cfn(name, template) {
             .then(function (data) {
                 return processCfStack(action, {
                     StackName: name,
-                    Capabilities: ['CAPABILITY_IAM'],
+                    Capabilities: capabilities,
                     TemplateBody: data
                 });
             })
