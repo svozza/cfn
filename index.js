@@ -282,6 +282,7 @@ function Cfn(name, template) {
             minutesOld = opts.minutesOld,
             dryRun = opts.dryRun,
             async = opts.async,
+            limit = opts.limit,
             next,
             done = false,
             stacks = [];
@@ -317,7 +318,12 @@ function Cfn(name, template) {
             return Promise.resolve();
         })()
             .then(function () {
-                _.forEach(stacks, function (stack) {
+                var filteredStacks = _.sortBy(stacks, ['CreationTime']);
+
+                if (limit) {
+                    filteredStacks = _.take(filteredStacks, limit);
+                }
+                _.forEach(filteredStacks, function (stack) {
                     if (dryRun) {
                         log('Will clean up ' + stack.StackName + ' Created ' + stack.CreationTime);
                     } else {
