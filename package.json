@@ -1,6 +1,6 @@
 {
   "name": "cfn",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
