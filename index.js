@@ -81,7 +81,7 @@ function Cfn(name, template) {
         startedAt = Date.now(),
         params = opts.params,
         awsConfig = opts.awsConfig,
-        capabilities = opts.capabilities | ['CAPABILITY_IAM'],
+        capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {};
 
     if (PROXY) {
