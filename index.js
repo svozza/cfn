@@ -235,7 +235,7 @@ function Cfn(name, template) {
         return Promise.resolve(JSON.stringify(fn(params)));
     }
 
-    function processStack(action, name, template, async) {
+    function processStack(action, name, template) {
         return (_.endsWith(template, '.js')
             ? loadJs(template)
             : fs.readFileAsync(template, 'utf8'))
@@ -254,7 +254,7 @@ function Cfn(name, template) {
     this.createOrUpdate = function () {
         return stackExists(name)
             .then(function (exists) {
-                return processStack(exists ? 'update' : 'create', name, template, async);
+                return processStack(exists ? 'update' : 'create', name, template);
             });
     };
 
