@@ -83,7 +83,7 @@ function Cfn(name, template) {
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {},
-        async = Object.prototype.hasOwnProperty.call(opts, 'async') ? opts.async : false;
+        async = opts.async;
 
     if (PROXY) {
         awsOpts.httpOptions = {
