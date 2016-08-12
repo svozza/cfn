@@ -83,7 +83,7 @@ function Cfn(name, template) {
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {},
-        enableLogging = Object.prototype.hasOwnProperty.call(opts,'enableLogging') ? opts.enableLogging : true;
+        enableLogging = Object.prototype.hasOwnProperty.call(opts, 'enableLogging') ? opts.enableLogging : true;
 
     if (PROXY) {
         awsOpts.httpOptions = {
