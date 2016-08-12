@@ -82,7 +82,8 @@ function Cfn(name, template) {
         params = opts.params,
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
-        awsOpts = {};
+        awsOpts = {},
+        async = opts.async;
 
     if (PROXY) {
         awsOpts.httpOptions = {
@@ -246,7 +247,7 @@ function Cfn(name, template) {
                 });
             })
             .then(function () {
-                return checkStack(action, name);
+                return async ? Promise.resolve() : checkStack(action, name);
             });
     }
 

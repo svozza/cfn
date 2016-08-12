@@ -84,6 +84,9 @@ Name of stack
 Path to template (json or js file).  If the optional second argument is passed in it
 will override this.
 
+##### options.async
+If set to true create and update runs asynchronously. Defaults to false.
+
 ##### options.params
 This is an object that gets passed to function templates.  For example this .js template
 ```javascript
