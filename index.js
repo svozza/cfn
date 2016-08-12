@@ -247,7 +247,7 @@ function Cfn(name, template) {
                 });
             })
             .then(function () {
-                    return async ? Promise.resolve() : checkStack(action, name);
+                return async ? Promise.resolve() : checkStack(action, name);
             });
     }
 
