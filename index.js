@@ -83,7 +83,7 @@ function Cfn(name, template) {
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {},
-        enableLogging = Object.prototype.hasOwnProperty.call(opts, 'enableLogging') ? opts.enableLogging : true;
+        async = Object.prototype.hasOwnProperty.call(opts, 'async') ? opts.async : false;
 
     if (PROXY) {
         awsOpts.httpOptions = {
@@ -235,7 +235,7 @@ function Cfn(name, template) {
         return Promise.resolve(JSON.stringify(fn(params)));
     }
 
-    function processStack(action, name, template, enableLogging) {
+    function processStack(action, name, template, async) {
         return (_.endsWith(template, '.js')
             ? loadJs(template)
             : fs.readFileAsync(template, 'utf8'))
@@ -246,18 +246,15 @@ function Cfn(name, template) {
                     TemplateBody: data
                 });
             })
-            .then(function (response) {
-                if (enableLogging) {
-                    return checkStack(action, name);
-                }
-                return response;
+            .then(function () {
+                    return async ? Promise.resolve() : checkStack(action, name);
             });
     }
 
     this.createOrUpdate = function () {
         return stackExists(name)
             .then(function (exists) {
-                return processStack(exists ? 'update' : 'create', name, template, enableLogging);
+                return processStack(exists ? 'update' : 'create', name, template, async);
             });
     };
 
