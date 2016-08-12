@@ -83,7 +83,7 @@ function Cfn(name, template) {
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {},
-        enableLogging = opts.hasOwnProperty('enableLogging') ? opts.enableLogging : true;
+        enableLogging = Object.prototype.hasOwnProperty.call(opts,'enableLogging') ? opts.enableLogging : true;
 
     if (PROXY) {
         awsOpts.httpOptions = {
@@ -99,7 +99,6 @@ function Cfn(name, template) {
 
     name = opts.name || name;
     template = opts.template || template;
-
 
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
@@ -248,7 +247,7 @@ function Cfn(name, template) {
                 });
             })
             .then(function (response) {
-                if(enableLogging){
+                if (enableLogging) {
                     return checkStack(action, name);
                 }
                 return response;
