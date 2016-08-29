@@ -203,16 +203,6 @@ function Cfn(name, template) {
         });
     }
 
-    function stackExists(name) {
-        return cf.describeStacksAsync({ StackName: name })
-            .then(function (data) {
-                return _.includes(exists, data.Stacks[0].StackStatus);
-            })
-            .catch(function () {
-                return false;
-            });
-    }
-
     function processCfStack(action, cfparms) {
         startedAt = Date.now();
         if (action === 'update') {
@@ -251,8 +241,18 @@ function Cfn(name, template) {
             });
     }
 
+    this.stackExists = function (overrideName) {
+        return cf.describeStacksAsync({ StackName: overrideName || name })
+            .then(function (data) {
+                return _.includes(exists, data.Stacks[0].StackStatus);
+            })
+            .catch(function () {
+                return false;
+            });
+    };
+
     this.createOrUpdate = function () {
-        return stackExists(name)
+        return this.stackExists()
             .then(function (exists) {
                 return processStack(exists ? 'update' : 'create', name, template);
             });
@@ -341,6 +341,10 @@ function Cfn(name, template) {
 
 var cfn = function (name, template) {
     return new Cfn(name, template).createOrUpdate();
+};
+
+cfn.stackExists = function (name) {
+    return new Cfn(name).stackExists();
 };
 
 cfn.create = function (name, template) {

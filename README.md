@@ -63,6 +63,18 @@ cfn.cleanup({
     });
 ```
 
+### Stack Exists
+Returns a boolean if a stack exists or not
+```javascript
+//Returns boolean if stack name 'foo-bar' exists
+cfn.stackExists('foo-bar')
+    .then(function(exists){
+        if (exists){
+            //Do something
+        }
+    })
+```
+
 ## API
 
 ### cfn(name|options[, template])
