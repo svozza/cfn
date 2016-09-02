@@ -258,7 +258,7 @@ function Cfn(name, template) {
             });
     };
 
-    this.delete = function (overrideName, async) {
+    this.delete = function (overrideName) {
         startedAt = Date.now();
         return cf.deleteStackAsync({ StackName: overrideName || name })
             .then(function () {
