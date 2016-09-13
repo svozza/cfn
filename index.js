@@ -103,7 +103,7 @@ function Cfn(name, template) {
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
             notExists = /ValidationError:\s+Stack\s+\[?.+]?\s+does not exist/,
-            throttling = /Throttling\:\s+Rate\s+exceeded/,
+            throttling = /Throttling:\s+Rate\s+exceeded/,
             displayedEvents = {};
 
         return new Promise(function (resolve, reject) {
