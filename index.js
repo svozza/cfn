@@ -103,6 +103,7 @@ function Cfn(name, template) {
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
             notExists = /ValidationError:\s+Stack\s+\[?.+]?\s+does not exist/,
+            throttling = /Throttling\:\s+Rate\s+exceeded/,
             displayedEvents = {};
 
         return new Promise(function (resolve, reject) {
@@ -176,6 +177,9 @@ function Cfn(name, template) {
                             if (err && notExists.test(err)) {
                                 return _success();
                             }
+                            if (err && throttling.test(err)) {
+                                return _processEvents(events);
+                            }
                             if (err) {
                                 return _failure(err);
                             }
@@ -199,7 +203,7 @@ function Cfn(name, template) {
                         }
                     });
                 })();
-            }, 3000);
+            }, 5000);
         });
     }
 
