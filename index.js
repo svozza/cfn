@@ -296,7 +296,7 @@ function Cfn(name, template) {
                     })
                     .map(function (stack) {
 
-                        if (regex.test(stack.StackName) && (moment(stack.CreationTime).unix() * 1000) < (Date.now() - ((daysOld || 0) * ONE_DAY))) {
+                        if (regex.test(stack.StackName) && moment(stack.CreationTime).valueOf() < (Date.now() - ((daysOld || 0) * ONE_DAY))) {
                             log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
 
                             return self.delete(stack.StackName)
