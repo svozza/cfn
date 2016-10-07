@@ -312,8 +312,8 @@ function Cfn(name, template) {
                         return data.StackSummaries;
                     })
                     .each(function (stack) {
-                        var millisOld = Date.now() - ((daysOld || 0) * ONE_DAY);
-                        if (regex.test(stack.StackName) && stack.CreationTime.valueOf() < millisOld) {
+                        var millisOld = Date.now() - ((minutesOld || 0) * ONE_DAY);
+                        if (regex.test(stack.StackName) && moment(stack.CreationTime).valueOf() < millisOld) {
                             stacks.push(stack);
                         }
                     })
