@@ -24,7 +24,7 @@ var fs = Promise.promisifyAll(filesystem);
 
 var PROXY = process.env.PROXY,
 
-    ONE_DAY = 86400000,
+    ONE_MINUTE = 60000,
 
     success = [
         'CREATE_COMPLETE',
@@ -76,22 +76,26 @@ var PROXY = process.env.PROXY,
     };
 
 function Cfn(name, template) {
-
     var log = console.log,
         opts = _.isPlainObject(name) ? name : {},
         startedAt = Date.now(),
         params = opts.params,
-        awsConfig = opts.awsConfig;
+        awsConfig = opts.awsConfig,
+        capabilities = opts.capabilities || ['CAPABILITY_IAM'],
+        awsOpts = {},
+        async = opts.async;
 
-    AWS.config.httpOptions = {
-        agent: PROXY ? new HttpsProxyAgent(PROXY) : undefined
-    };
+    if (PROXY) {
+        awsOpts.httpOptions = {
+            agent: new HttpsProxyAgent(PROXY)
+        };
+    }
     if (awsConfig) {
-        AWS.config.update(awsConfig);
+        _.merge(awsOpts, awsConfig);
     }
 
     // initialize cf
-    var cf = Promise.promisifyAll(new AWS.CloudFormation());
+    var cf = Promise.promisifyAll(new AWS.CloudFormation(awsOpts));
 
     name = opts.name || name;
     template = opts.template || template;
@@ -99,6 +103,7 @@ function Cfn(name, template) {
     function checkStack(action, name) {
         var logPrefix = name + ' ' + action.toUpperCase(),
             notExists = /ValidationError:\s+Stack\s+\[?.+]?\s+does not exist/,
+            throttling = /Throttling:\s+Rate\s+exceeded/,
             displayedEvents = {};
 
         return new Promise(function (resolve, reject) {
@@ -119,12 +124,10 @@ function Cfn(name, template) {
             function _processEvents(events) {
                 events = _.sortBy(events, 'Timestamp');
                 _.forEach(events, function (event) {
-                    var timestamp = moment(event.Timestamp);
                     displayedEvents[event.EventId] = true;
-                    // log(event.Timestamp);
-                    if (timestamp.valueOf() >= startedAt) {
+                    if (moment(event.Timestamp).valueOf() >= startedAt) {
                         log(sprintf('[%s] %s %s: %s - %s  %s  %s',
-                            chalk.gray(timestamp.format('HH:mm:ss')),
+                            chalk.gray(moment(event.Timestamp).format('HH:mm:ss')),
                             ings[action],
                             chalk.cyan(name),
                             event.ResourceType,
@@ -136,6 +139,7 @@ function Cfn(name, template) {
                 });
 
                 var lastEvent = _.last(events) || {},
+                    timestamp = moment(lastEvent.Timestamp).valueOf(),
                     resourceType = lastEvent.ResourceType,
                     status = lastEvent.ResourceStatus,
                     statusReason = lastEvent.ResourceStatusReason;
@@ -143,7 +147,11 @@ function Cfn(name, template) {
                 if (resourceType !== 'AWS::CloudFormation::Stack') {
                     // Do nothing
                 } else if (_.includes(failed, status)) {
-                    _failure(statusReason);
+                    if (timestamp >= startedAt) {
+                        _failure(statusReason);
+                    } else {
+                        _success();
+                    }
                 } else if (_.includes(success, status)) {
                     _success();
                 }
@@ -169,6 +177,9 @@ function Cfn(name, template) {
                             if (err && notExists.test(err)) {
                                 return _success();
                             }
+                            if (err && throttling.test(err)) {
+                                return _processEvents(events);
+                            }
                             if (err) {
                                 return _failure(err);
                             }
@@ -192,18 +203,8 @@ function Cfn(name, template) {
                         }
                     });
                 })();
-            }, 3000);
+            }, 5000);
         });
-    }
-
-    function stackExists(name) {
-        return cf.describeStacksAsync({ StackName: name })
-            .then(function (data) {
-                return _.includes(exists, data.Stacks[0].StackStatus);
-            })
-            .catch(function () {
-                return false;
-            });
     }
 
     function processCfStack(action, cfparms) {
@@ -235,27 +236,37 @@ function Cfn(name, template) {
             .then(function (data) {
                 return processCfStack(action, {
                     StackName: name,
-                    Capabilities: ['CAPABILITY_IAM'],
+                    Capabilities: capabilities,
                     TemplateBody: data
                 });
             })
             .then(function () {
-                return checkStack(action, name);
+                return async ? Promise.resolve() : checkStack(action, name);
             });
     }
 
+    this.stackExists = function (overrideName) {
+        return cf.describeStacksAsync({ StackName: overrideName || name })
+            .then(function (data) {
+                return _.includes(exists, data.Stacks[0].StackStatus);
+            })
+            .catch(function () {
+                return false;
+            });
+    };
+
     this.createOrUpdate = function () {
-        return stackExists(name)
+        return this.stackExists()
             .then(function (exists) {
                 return processStack(exists ? 'update' : 'create', name, template);
             });
     };
 
-    this.delete = function (name) {
+    this.delete = function (overrideName) {
         startedAt = Date.now();
-        return cf.deleteStackAsync({ StackName: name })
+        return cf.deleteStackAsync({ StackName: overrideName || name })
             .then(function () {
-                return checkStack('delete', name);
+                return async ? Promise.resolve() : checkStack('delete', overrideName || name);
             });
     };
 
@@ -270,10 +281,16 @@ function Cfn(name, template) {
             });
     };
 
-    this.cleanup = function (regex, daysOld) {
+    this.cleanup = function (opts) {
         var self = this,
+            regex = opts.regex,
+            minutesOld = opts.minutesOld,
+            dryRun = opts.dryRun,
+            async = opts.async,
+            limit = opts.limit,
             next,
-            done = false;
+            done = false,
+            stacks = [];
 
         startedAt = Date.now();
         return (function loop() {
@@ -294,28 +311,45 @@ function Cfn(name, template) {
                         done = !next;
                         return data.StackSummaries;
                     })
-                    .map(function (stack) {
+                    .each(function (stack) {
                         var millisOld = Date.now() - ((daysOld || 0) * ONE_DAY);
-                        if (regex.test(stack.StackName) &&
-                            moment(stack.CreationTime).valueOf() < millisOld) {
-                            log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
-
-                            return self.delete(stack.StackName)
-                                .catch(function (err) {
-                                    log('DELETE ERR: ', err);
-                                });
+                        if (regex.test(stack.StackName) && stack.CreationTime < millisOld) {
+                            stacks.push(stack);
                         }
-                        return null;
                     })
-                    .then(loop);
+                    .then(function () {
+                        return loop();
+                    });
             }
             return Promise.resolve();
-        })();
+        })()
+            .then(function () {
+                var filteredStacks = _.sortBy(stacks, ['CreationTime']);
+
+                if (limit) {
+                    filteredStacks = _.take(filteredStacks, limit);
+                }
+                _.forEach(filteredStacks, function (stack) {
+                    if (dryRun) {
+                        log('Will clean up ' + stack.StackName + ' Created ' + stack.CreationTime);
+                    } else {
+                        log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
+                        return self.delete(stack.StackName, async)
+                            .catch(function (err) {
+                                log('DELETE ERROR: ', err);
+                            });
+                    }
+                });
+            });
     };
 }
 
 var cfn = function (name, template) {
     return new Cfn(name, template).createOrUpdate();
+};
+
+cfn.stackExists = function (name) {
+    return new Cfn(name).stackExists();
 };
 
 cfn.create = function (name, template) {
@@ -330,8 +364,8 @@ cfn.outputs = function (name) {
     return new Cfn(name).outputs();
 };
 
-cfn.cleanup = function (regex, daysOld) {
-    return new Cfn().cleanup(regex, daysOld);
+cfn.cleanup = function (regex, daysOld, dryRun) {
+    return new Cfn().cleanup(regex, daysOld, dryRun);
 };
 
 module.exports = cfn;

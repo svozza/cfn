@@ -54,10 +54,25 @@ Cleanup stacks based on regex and daysOld.
 
 ```javascript
 // Delete stacks starting with TEST- that are 3 days old or more
-cfn.cleanup(/TEST-/, 3)
+cfn.cleanup({
+    regex: /TEST-/, 
+    minutesOld: 60
+})
     .then(function() {
         console.log('done')
     });
+```
+
+### Stack Exists
+Returns a boolean if a stack exists or not
+```javascript
+//Returns boolean if stack name 'foo-bar' exists
+cfn.stackExists('foo-bar')
+    .then(function(exists){
+        if (exists){
+            //Do something
+        }
+    })
 ```
 
 ## API
@@ -80,6 +95,9 @@ Name of stack
 ##### options.template
 Path to template (json or js file).  If the optional second argument is passed in it
 will override this.
+
+##### options.async
+If set to true create/update and delete runs asynchronously. Defaults to false.
 
 ##### options.params
 This is an object that gets passed to function templates.  For example this .js template
