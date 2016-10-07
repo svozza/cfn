@@ -295,8 +295,9 @@ function Cfn(name, template) {
                         return data.StackSummaries;
                     })
                     .map(function (stack) {
-
-                        if (regex.test(stack.StackName) && moment(stack.CreationTime).valueOf() < (Date.now() - ((daysOld || 0) * ONE_DAY))) {
+                        var millisOld = Date.now() - ((daysOld || 0) * ONE_DAY);
+                        if (regex.test(stack.StackName) &&
+                            moment(stack.CreationTime).valueOf() < millisOld) {
                             log('Cleaning up ' + stack.StackName + ' Created ' + stack.CreationTime);
 
                             return self.delete(stack.StackName)
