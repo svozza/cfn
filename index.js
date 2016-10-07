@@ -313,7 +313,7 @@ function Cfn(name, template) {
                     })
                     .each(function (stack) {
                         var millisOld = Date.now() - ((daysOld || 0) * ONE_DAY);
-                        if (regex.test(stack.StackName) && stack.CreationTime < millisOld) {
+                        if (regex.test(stack.StackName) && stack.CreationTime.valueOf() < millisOld) {
                             stacks.push(stack);
                         }
                     })
