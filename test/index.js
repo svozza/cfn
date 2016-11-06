@@ -47,6 +47,17 @@ tape('Create / Update js function template', 'TEST-JS-FN-TEMPLATE', function (t)
         });
 });
 
+tape('Create / Update json string', 'TEST-JSON-STRING-TEMPLATE', function (t) {
+    return cfn('TEST-JSON-TEMPLATE', require(path.join(__dirname, '/templates/test-template-1.json')))
+        .then(function () {
+            return cf.describeStacksAsync({ StackName: 'TEST-JSON-TEMPLATE' });
+        })
+        .then(function (data) {
+            t.equal(data.Stacks[0].StackName, 'TEST-JSON-TEMPLATE', 'Stack Name Matches');
+            t.equal(data.Stacks[0].StackStatus, 'CREATE_COMPLETE', 'Stack Status is correct');
+        });
+});
+
 tape('Cleanup js stacks', function () {
     return cfn.cleanup(/TEST-JS-/);
 });

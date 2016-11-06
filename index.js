@@ -230,9 +230,25 @@ function Cfn(name, template) {
     }
 
     function processStack(action, name, template) {
-        return (_.endsWith(template, '.js')
-            ? loadJs(template)
-            : fs.readFileAsync(template, 'utf8'))
+        var promise;
+
+        switch (true) {
+            // Check if template if a `js` file
+            case _.endsWith(template, '.js'):
+                promise = loadJs(template);
+                break;
+
+            // Check if template is an object, assume this is JSON good to go
+            case _.isObjectLike(template):
+                promise = Promise.resolve(JSON.stringify(template));
+                break;
+
+            // Default to loading template from file.
+            default:
+                promise = fs.readFileAsync(template, 'utf8');
+        }
+
+        return promise
             .then(function (data) {
                 return processCfStack(action, {
                     StackName: name,
