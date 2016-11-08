@@ -13,7 +13,7 @@ cfn makes the following Cloud Formation tasks simpler.
 ##### Cleanup Stacks
 * Use regex pattern to delete stacks.
 * Include `daysOld` to delete stacks this old.
-    
+
 ## Install
 ```
 $ npm install cfn --save-dev
@@ -22,7 +22,7 @@ $ npm install cfn --save-dev
 ## Usage
 
 ### Create / Update
-Use cfn to create or update a Cloud Formation stack.  It returns a promise.  You can use Node.js modules or standard 
+Use cfn to create or update a Cloud Formation stack.  It returns a promise.  You can use Node.js modules or standard
 json for Cloud Formation Templates.
 
 ```javascript
@@ -35,7 +35,7 @@ cfn('Foo-Bar', __dirname + '/template.js')
     .then(function() {
         console.log('done');
     });
-    
+
 // Create or update the Foo-Bar stack with the template.json json template.
 cfn('Foo-Bar', 'template.json');
 
@@ -55,7 +55,7 @@ Cleanup stacks based on regex and daysOld.
 ```javascript
 // Delete stacks starting with TEST- that are 3 days old or more
 cfn.cleanup({
-    regex: /TEST-/, 
+    regex: /TEST-/,
     minutesOld: 60
 })
     .then(function() {
@@ -93,7 +93,7 @@ Path to the template (js or json file).  This is optional and if given will over
 Name of stack
 
 ##### options.template
-Path to template (json or js file).  If the optional second argument is passed in it
+Path to template (json or js file), or a JSON object. If the optional second argument is passed in it
 will override this.
 
 ##### options.async
@@ -135,13 +135,12 @@ This allows you to pass any [config properties allowed by the AWS Node.js SDK](h
 cfn({
     name: 'Foo-Bar',
     template: _dirname + '/template.js',
-    awsConfig: { 
+    awsConfig: {
         region: 'us-west-2'
-        accessKeyId: 'akid', 
+        accessKeyId: 'akid',
         secretAccessKey: 'secret'
     }
 }).then(function() {
     console.log('done');
 });
 ```
-

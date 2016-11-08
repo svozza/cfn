@@ -32,7 +32,8 @@
       "operator-linebreak": [
         "error",
         "before"
-      ]
+      ],
+      "no-use-extend-native/no-use-extend-native": "off"
     }
   },
   "keywords": [
