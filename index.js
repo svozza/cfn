@@ -197,7 +197,7 @@ function Cfn(name, template) {
                 running = true;
 
                 (function loop() {
-                    return getAllStackEvents()
+                    return getAllStackEvents(name)
                         .then(function (allEvents) {
                             running = false;
                             _.forEach(allEvents, function (event) {
@@ -284,6 +284,8 @@ function Cfn(name, template) {
     this.stackExists = function (overrideName) {
         return cf.describeStacks({ StackName: overrideName || name }).promise()
             .then(function (data) {
+                console.log("data");
+                console.log(data);
                 return _.includes(exists, data.Stacks[0].StackStatus);
             })
             .catch(function () {
