@@ -197,7 +197,7 @@ function Cfn(name, template) {
                 running = true;
 
                 (function loop() {
-                    return getAllStackEvents()
+                    return getAllStackEvents(name)
                         .then(function (allEvents) {
                             running = false;
                             _.forEach(allEvents, function (event) {
