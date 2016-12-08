@@ -126,7 +126,7 @@ function Cfn(name, template) {
             function _failure(msg) {
                 var fullMsg = logPrefix + ' Failed' + (msg ? ': ' + msg : '');
                 clearInterval(interval);
-                return reject(fullMsg);
+                return reject(new Error(fullMsg));
             }
 
             function _processEvents(events) {
@@ -179,7 +179,7 @@ function Cfn(name, template) {
                         .then(function (data) {
                             next = (data || {}).NextToken;
                             done = !next || !data;
-                            allEvents.push(data.StackEvents);
+                            allEvents = allEvents.concat(data.StackEvents);
                             return done ? Promise.resolve() : getStackEventsHelper();
                         });
                 }
@@ -284,8 +284,6 @@ function Cfn(name, template) {
     this.stackExists = function (overrideName) {
         return cf.describeStacks({ StackName: overrideName || name }).promise()
             .then(function (data) {
-                console.log("data");
-                console.log(data);
                 return _.includes(exists, data.Stacks[0].StackStatus);
             })
             .catch(function () {

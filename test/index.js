@@ -2,21 +2,24 @@
 
 var path = require('path');
 
-var tape = require('blue-tape'),
-    AWS = require('aws-sdk-mock');
-
-// AWS.config.setPromisesDependency(require('bluebird'));
-
+var AWS = require('aws-sdk-mock');
 
 describe('create/update', function() {
     this.timeout(10000);
+    var describeStackEventsStub;
     beforeEach(function(){
-        AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
-            console.log('called describestack events with params');
-            console.log(params);
-            var stackEvents = require('./mocks/stack-events')
-            callback(null, stackEvents);
+        describeStackEventsStub = AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
+            var stackEvents = require('./mocks/stack-events');
+            console.log('hi')
+            if (params.NextToken === "token1"){
+                console.log('token')
+                return callback(null, stackEvents.mockDescribeEventsResponse2);
+            } else {
+                console.log('no token')
+                return callback(null, stackEvents.mockDescribeEventsResponse1);
+            }
         });
+
         AWS.mock('CloudFormation', 'describeStacks', function (params, callback){
             console.log('describeStacks params');
             var mockResponse = { ResponseMetadata: { RequestId: '75910902-bd63-11e6-aa30-ad2ddc67a636' },
@@ -48,9 +51,7 @@ describe('create/update', function() {
             var cfn = require('../');
             return cfn({name: 'TEST-JSON-TEMPLATE', awsConfig: {region: "us-west-2"}}, path.join(__dirname, '/templates/test-template-1.json'))
                 .then(function(res){
-                    console.log('res');
-                    console.log(res);
-                    console.log(JSON.stringify(res));
+                    console.log(describeStackEventsStub);
                     return res;
                 })
         });

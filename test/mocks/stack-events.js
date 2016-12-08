@@ -67,6 +67,10 @@ stackEventsMock.mockDescribeEventsResponse1 = {
     NextToken: "token1"
 };
 
+stackEventsMock.mockDescribeEventsResponse2 = {
+    StackEvents: stackEventsMock.orderedStackEventsList
+};
+
 stackEventsMock.mockEventTypes = mockEvents;
 
 module.exports = stackEventsMock;

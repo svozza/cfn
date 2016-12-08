@@ -4,7 +4,7 @@
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha -r ./test/common.js",
     "tape": "node test | tap-spec"
   },
   "repository": {
@@ -62,10 +62,10 @@
   },
   "devDependencies": {
     "aws-sdk-mock": "^1.6.1",
-    "blue-tape": "^0.2.0",
     "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
     "mocha": "^3.2.0",
-    "sinon-as-promised": "^4.0.2",
+    "sinon-chai": "^2.8.0",
     "tap-json": "^1.0.0",
     "tap-spec": "^4.1.1",
     "tap-xunit": "^1.4.0",
