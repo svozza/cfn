@@ -84,7 +84,8 @@ function Cfn(name, template) {
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {},
-        async = opts.async;
+        async = opts.async,
+        checkStackInterval = opts.checkStackInterval || 5000;
 
     if (PROXY) {
         awsOpts.httpOptions = {
@@ -223,7 +224,7 @@ function Cfn(name, template) {
                             }
                         });
                 })();
-            }, 5000);
+            }, checkStackInterval);
         });
     }
 

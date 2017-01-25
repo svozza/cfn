@@ -1,59 +1,100 @@
 'use strict';
 
 var path = require('path');
+var mocha = require('mocha'),
+    describe = mocha.describe,
+    beforeEach = mocha.beforeEach,
+    afterEach = mocha.afterEach;
 
 var AWS = require('aws-sdk-mock');
 
 describe('create/update', function() {
     this.timeout(10000);
-    var describeStackEventsStub;
+    var describeStackEventsStub, numDescribeStackEventsCalls,
+        describeStacksStub, updateStackStub;
     beforeEach(function(){
-        describeStackEventsStub = AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
-            var stackEvents = require('./mocks/stack-events');
-            console.log('hi')
-            if (params.NextToken === "token1"){
-                console.log('token')
-                return callback(null, stackEvents.mockDescribeEventsResponse2);
-            } else {
-                console.log('no token')
-                return callback(null, stackEvents.mockDescribeEventsResponse1);
-            }
-        });
-
-        AWS.mock('CloudFormation', 'describeStacks', function (params, callback){
-            console.log('describeStacks params');
-            var mockResponse = { ResponseMetadata: { RequestId: '75910902-bd63-11e6-aa30-ad2ddc67a636' },
-                Stacks:
-                    [ { StackId: 'arn:aws:cloudformation:us-west-2:0000000000:stack/TEST-JSON-TEMPLATE/0000000-bbf9-11e6-aa85-50d5ca11b856',
-                        StackName: 'TEST-JSON-TEMPLATE',
-                        Description: 'Stack for testing json template',
-                        Parameters: [],
-                        CreationTime: "Tue Dec 06 2016 15:16:05 GMT-0600 (CST)",
-                LastUpdatedTime: "Tue Dec 06 2016 16:08:10 GMT-0600 (CST)",
-                StackStatus: 'UPDATE_COMPLETE',
-                DisableRollback: false,
-                NotificationARNs: [],
-                Capabilities: [],
-                Outputs: [],
-                Tags: [] } ] };
+        describeStacksStub = AWS.mock('CloudFormation', 'describeStacks', function (params, callback){
+            var mockResponse = require('./mocks/describe-stacks').response;
             callback(null, mockResponse);
         });
-        AWS.mock('CloudFormation', 'updateStack', function (params, callback){
-            console.log('update stack');
-            callback(null, 'hi');
+        updateStackStub = AWS.mock('CloudFormation', 'updateStack', function (params, callback){
+            callback(null, 'success!');
         });
     });
     afterEach(function(){
         AWS.restore();
     });
-    describe('#indexOf()', function() {
-        it('should return -1 when the value is not present', function() {
+    describe('if stack events need to be paginated', function() {
+        beforeEach(function(){
+            numDescribeStackEventsCalls = 0;
+            describeStackEventsStub = AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
+                var stackEvents = require('./mocks/stack-events');
+                ++numDescribeStackEventsCalls;
+                // if next token is provided, respond with mock that has no "NextToken"
+                if (params.NextToken === "token1"){
+                    return callback(null, stackEvents.mockDescribeEventsResponse2);
+                } else {
+                    return callback(null, stackEvents.mockDescribeEventsResponse1);
+                }
+            });
+        });
+        it('should call describe stack events twice', function() {
             var cfn = require('../');
             return cfn({name: 'TEST-JSON-TEMPLATE', awsConfig: {region: "us-west-2"}}, path.join(__dirname, '/templates/test-template-1.json'))
                 .then(function(res){
-                    console.log(describeStackEventsStub);
+                    describeStackEventsStub.stub.should.be.calledTwice();
+                    // first call should have nextToken === undefined
+                    var firstCall = describeStackEventsStub.stub.firstCall;
+                    firstCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
+                    (typeof firstCall.args[0].NextToken).should.equal('undefined');
+
+                    // second call nextToken should be 'token1'
+                    var secondCall = describeStackEventsStub.stub.secondCall;
+                    secondCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
+                    secondCall.args[0].NextToken.should.equal('token1');
+
                     return res;
                 })
+        });
+    });
+    describe('if update is in progress', function() {
+        this.timeout(3000);
+        beforeEach(function(){
+            numDescribeStackEventsCalls = 0;
+            describeStackEventsStub = AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
+                var stackEvents = require('./mocks/stack-events');
+                ++numDescribeStackEventsCalls;
+                var mockStackEvents;
+                // on first call, return with update still in progress mock stack events
+                if (numDescribeStackEventsCalls < 2){
+                    mockStackEvents = {
+                        StackEvents: stackEvents.updateInProgress
+                    };
+                } else {
+                    // on second call, return with stack update complete mock events
+                    mockStackEvents = {
+                        StackEvents: stackEvents.orderedStackEventsList
+                    };
+                }
+                return callback(null, mockStackEvents);
+            });
+        });
+        it('should loop', function() {
+            var cfn = require('../');
+            return cfn({name: 'TEST-JSON-TEMPLATE', awsConfig: {region: "us-west-2"}, checkStackInterval: 1000}, path.join(__dirname, '/templates/test-template-1.json'))
+                .then(function(res){
+                    describeStackEventsStub.stub.should.be.calledTwice();
+                    // first call should have nextToken === undefined
+                    var firstCall = describeStackEventsStub.stub.firstCall;
+                    firstCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
+                    (typeof firstCall.args[0].NextToken).should.equal('undefined');
+
+                    // make sure 2nd call isn't due to pagination
+                    var secondCall = describeStackEventsStub.stub.secondCall;
+                    secondCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
+                    (typeof secondCall.args[0].NextToken).should.equal('undefined');
+                    return res;
+                });
         });
     });
 });
