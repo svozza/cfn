@@ -58,7 +58,6 @@ describe('create/update', function() {
         });
     });
     describe('if update is in progress', function() {
-        this.timeout(3000);
         beforeEach(function(){
             numDescribeStackEventsCalls = 0;
             describeStackEventsStub = AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
