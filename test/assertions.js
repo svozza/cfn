@@ -1,4 +1,5 @@
 var should = require('should');
+require('should-sinon');
 
 should.Assertion.add(
     'calledWithCFStackParams',

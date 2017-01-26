@@ -7,7 +7,9 @@ var mocha = require('mocha'),
     afterEach = mocha.afterEach,
     it = mocha.it,
     sinon = require('sinon'),
+    should = require('should'),
     assertions = require('./assertions');
+require('should-sinon');
 
 var AWS = require('aws-sdk-mock');
 
