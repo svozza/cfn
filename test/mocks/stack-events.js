@@ -27,7 +27,7 @@ var cfEventFactory = function(){
     return Object.assign(Object.create(cfEvent), {
         EventId: eventId
     });
-}
+};
 
 // resource type cf stack
 var cfStackEventFactory = function cfStackEventFactory (opts) {
