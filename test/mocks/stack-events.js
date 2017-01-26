@@ -49,7 +49,7 @@ var mockEvents = {
     UPDATE_IN_PROGRESS: cfStackEventFactory(resourceStatusOpts.UPDATE_IN_PROGRESS).setRelativeTimestamp(500)
 };
 
-stackEventsMock.orderedStackEventsList = [
+stackEventsMock.updateComplete = [
     mockEvents.UPDATE_COMPLETE
 ];
 
@@ -59,14 +59,14 @@ stackEventsMock.updateInProgress = [
 ];
 
 // stack events list has NextToken, expect describeStackEvents to call again
-stackEventsMock.mockDescribeEventsResponse1 = {
-    StackEvents: stackEventsMock.orderedStackEventsList,
+stackEventsMock.mockDescribeEventsResponsePage1 = {
+    StackEvents: stackEventsMock.updateComplete,
     NextToken: "token1"
 };
 
 // update in progress response
 // no NextToken to signal end of stack events list
-stackEventsMock.mockDescribeEventsResponse2 = {
+stackEventsMock.mockDescribeEventsResponsePage2 = {
     StackEvents: stackEventsMock.updateInProgress
 };
 

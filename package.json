@@ -4,8 +4,7 @@
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "mocha -r ./test/common.js",
-    "tape": "node test | tap-spec"
+    "test": "mocha -r ./test/common.js"
   },
   "repository": {
     "type": "git",

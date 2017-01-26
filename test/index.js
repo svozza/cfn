@@ -4,7 +4,8 @@ var path = require('path');
 var mocha = require('mocha'),
     describe = mocha.describe,
     beforeEach = mocha.beforeEach,
-    afterEach = mocha.afterEach;
+    afterEach = mocha.afterEach,
+    assertions = require('./assertions');
 
 var AWS = require('aws-sdk-mock');
 
@@ -31,9 +32,9 @@ describe('create/update', function() {
                 ++numDescribeStackEventsCalls;
                 // if next token is provided, respond with mock that has no "NextToken"
                 if (params.NextToken === "token1"){
-                    return callback(null, stackEvents.mockDescribeEventsResponse2);
+                    return callback(null, stackEvents.mockDescribeEventsResponsePage2);
                 } else {
-                    return callback(null, stackEvents.mockDescribeEventsResponse1);
+                    return callback(null, stackEvents.mockDescribeEventsResponsePage1);
                 }
             });
         });
@@ -67,7 +68,7 @@ describe('create/update', function() {
                     return callback(null, { StackEvents: stackEvents.updateInProgress });
                 } else {
                     // on second call, return with stack update complete mock events
-                    return callback(null, { StackEvents: stackEvents.orderedStackEventsList });
+                    return callback(null, { StackEvents: stackEvents.updateComplete });
                 }
             });
         });
@@ -101,7 +102,7 @@ describe('create/update', function() {
             AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
                 var stackEvents = require('./mocks/stack-events');
                 callback(null, {
-                    StackEvents: stackEvents.orderedStackEventsList
+                    StackEvents: stackEvents.updateComplete
                 });
             });
         })
@@ -143,38 +144,26 @@ describe('create/update', function() {
 
 describe('CF templates',function(){
     this.timeout(6000);
-    var describeStacksStub, updateStackStub, successStub;
+    var updateStackStub;
     beforeEach(function(){
         AWS.restore();
         // setup create/update stack stubs
         updateStackStub = AWS.mock('CloudFormation', 'updateStack', sinon.stub().callsArgWith(1, null, 'updated'));
 
         AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback){
-            var stackEvents = require('./mocks/stack-events');
-            callback(null, {
-                StackEvents: stackEvents.orderedStackEventsList
-            });
+            callback(null, { StackEvents: require('./mocks/stack-events').updateComplete });
         });
 
-        successStub = sinon.stub().callsArgWith(1, null, require('./mocks/describe-stacks').response);
-        describeStacksStub = AWS.mock('CloudFormation', 'describeStacks', successStub);
+        AWS.mock('CloudFormation', 'describeStacks',
+            sinon.stub().callsArgWith(1, null, require('./mocks/describe-stacks').response));
     })
     describe('Create / Update json template', function () {
         it('renders json string template correctly', function(){
             var cfn = require('../');
             return cfn('TEST-JSON-TEMPLATE', path.join(__dirname, '/templates/test-template-1.json'))
                 .then(function (data) {
-                    // should have called update
-                    updateStackStub.stub.should.be.calledOnce();
-
-                    // update call should have stack name and default capabilities
-                    var updateCall = updateStackStub.stub.firstCall;
-                    updateCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
-                    updateCall.args[0].Capabilities.should.be.eql(['CAPABILITY_IAM']);
-
-                    // check that template is the same as object
-                    var requestedTemplate = JSON.parse(updateCall.args[0].TemplateBody);
-                    requestedTemplate.should.be.eql(require(path.join(__dirname, '/templates/test-template-1.json')));
+                    updateStackStub.stub.should.be.calledWithCFStackParams('TEST-JSON-TEMPLATE', ['CAPABILITY_IAM'],
+                        require(path.join(__dirname, '/templates/test-template-1.json')));
                     return data;
                 });
         });
@@ -184,16 +173,8 @@ describe('CF templates',function(){
             var cfn = require('../');
             return cfn('TEST-JS-TEMPLATE', path.join(__dirname, '/templates/test-template-2.js'))
                 .then(function (data) {
-                    updateStackStub.stub.should.be.calledOnce();
-
-                    // update should have js template stack name
-                    var updateCall = updateStackStub.stub.firstCall;
-                    updateCall.args[0].StackName.should.equal('TEST-JS-TEMPLATE');
-                    updateCall.args[0].Capabilities.should.be.eql(['CAPABILITY_IAM']);
-
-                    // check that template is the same as object
-                    var requestedTemplate = JSON.parse(updateCall.args[0].TemplateBody);
-                    requestedTemplate.should.be.eql(require(path.join(__dirname, '/templates/test-template-2.js')));
+                    updateStackStub.stub.should.be.calledWithCFStackParams('TEST-JS-TEMPLATE', ['CAPABILITY_IAM'],
+                        require(path.join(__dirname, '/templates/test-template-2.js')));
                     return data;
                 });
         });
@@ -207,16 +188,8 @@ describe('CF templates',function(){
                 template: path.join(__dirname, '/templates/test-template-3.js'),
                 params: testParams
             }).then(function (data) {
-                updateStackStub.stub.should.be.calledOnce();
-
-                // create call should have function template stack name
-                var updateCall = updateStackStub.stub.firstCall;
-                updateCall.args[0].StackName.should.equal('TEST-JS-FN-TEMPLATE');
-
-                // check that template is the same as object
-                var renderedTemplate = JSON.parse(updateCall.args[0].TemplateBody);
-                var expectedTemplate = require(path.join(__dirname, '/templates/test-template-3.js'))(testParams);
-                renderedTemplate.should.be.eql(expectedTemplate);
+                updateStackStub.stub.should.be.calledWithCFStackParams('TEST-JS-FN-TEMPLATE', ['CAPABILITY_IAM'],
+                    require(path.join(__dirname, '/templates/test-template-3.js'))(testParams));
                 return data;
             });
         });
