@@ -197,33 +197,31 @@ function Cfn(name, template) {
                 }
                 running = true;
 
-                (function loop() {
-                    return getAllStackEvents(name)
-                        .then(function (allEvents) {
-                            running = false;
-                            _.forEach(allEvents, function (event) {
-                                // if event has already been seen, don't add to events to process list
-                                if (displayedEvents[event.EventId]) {
-                                    return;
-                                }
-                                events.push(event);
-                            });
-                            return _processEvents(events);
-                        }).catch(function (err) {
-                            // if stack does not exist, notify success
-                            if (err && notExists.test(err)) {
-                                return _success();
+                return getAllStackEvents(name)
+                    .then(function (allEvents) {
+                        running = false;
+                        _.forEach(allEvents, function (event) {
+                            // if event has already been seen, don't add to events to process list
+                            if (displayedEvents[event.EventId]) {
+                                return;
                             }
-                            // if throttling has occurred, process events again
-                            if (err && throttling.test(err)) {
-                                return _processEvents(events);
-                            }
-                            // otherwise, notify of failure
-                            if (err) {
-                                return _failure(err);
-                            }
+                            events.push(event);
                         });
-                })();
+                        return _processEvents(events);
+                    }).catch(function (err) {
+                        // if stack does not exist, notify success
+                        if (err && notExists.test(err)) {
+                            return _success();
+                        }
+                        // if throttling has occurred, process events again
+                        if (err && throttling.test(err)) {
+                            return _processEvents(events);
+                        }
+                        // otherwise, notify of failure
+                        if (err) {
+                            return _failure(err);
+                        }
+                    });
             }, checkStackInterval);
         });
     }
