@@ -50,7 +50,7 @@ describe('create/update', function() {
                     // first call should have nextToken === undefined
                     var firstCall = describeStackEventsStub.stub.firstCall;
                     firstCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
-                    (typeof firstCall.args[0].NextToken).should.equal('undefined');
+                    should(firstCall.args[0].NextToken).be.undefined();
 
                     // second call nextToken should be 'token1'
                     var secondCall = describeStackEventsStub.stub.secondCall;
@@ -85,12 +85,12 @@ describe('create/update', function() {
                     // first call should have nextToken === undefined
                     var firstCall = describeStackEventsStub.stub.firstCall;
                     firstCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
-                    (typeof firstCall.args[0].NextToken).should.equal('undefined');
+                    should(firstCall.args[0].NextToken).be.undefined();
 
                     // make sure 2nd call isn't due to pagination
                     var secondCall = describeStackEventsStub.stub.secondCall;
                     secondCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE');
-                    (typeof secondCall.args[0].NextToken).should.equal('undefined');
+                    should(secondCall.args[0].NextToken).be.undefined();
                     return res;
                 });
         });
