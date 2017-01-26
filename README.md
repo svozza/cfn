@@ -1,4 +1,4 @@
-# cfn [![CircleCI](https://circleci.com/gh/Nordstrom/cfn.svg?style=shield)](https://circleci.com/gh/Nordstrom/cfn) [![bitHound Overall Score](https://www.bithound.io/github/Nordstrom/cfn/badges/score.svg)](https://www.bithound.io/github/Nordstrom/cfn)
+# cfn [![Build Status](https://travis-ci.org/Nordstrom/cfn.svg?branch=master)](https://travis-ci.org/Nordstrom/cfn) [![bitHound Overall Score](https://www.bithound.io/github/Nordstrom/cfn/badges/score.svg)](https://www.bithound.io/github/Nordstrom/cfn)
 
 cfn makes the following Cloud Formation tasks simpler.
 ##### Create / Update Stack

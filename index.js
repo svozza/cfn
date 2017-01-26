@@ -21,7 +21,7 @@ var Promise = require('bluebird'),
     HttpsProxyAgent = require('https-proxy-agent');
 
 var fs = Promise.promisifyAll(filesystem);
-AWS.config.setPromisesDependency(require('bluebird'));
+AWS.config.setPromisesDependency(Promise);
 
 var PROXY = process.env.PROXY,
 
@@ -169,22 +169,21 @@ function Cfn(name, template) {
             // provides all pagination
             function getAllStackEvents(stackName) {
                 var next,
-                    done = false,
                     allEvents = [];
 
-                function getStackEventsHelper() {
+                function getStackEvents() {
                     return cf.describeStackEvents({
                         StackName: stackName,
                         NextToken: next
-                    }).promise()
+                    })
+                        .promise()
                         .then(function (data) {
                             next = (data || {}).NextToken;
-                            done = !next || !data;
                             allEvents = allEvents.concat(data.StackEvents);
-                            return done ? Promise.resolve() : getStackEventsHelper();
+                            return !next ? Promise.resolve() : getStackEvents();
                         });
                 }
-                return getStackEventsHelper().then(function () {
+                return getStackEvents().then(function () {
                     return allEvents;
                 });
             }
@@ -197,33 +196,31 @@ function Cfn(name, template) {
                 }
                 running = true;
 
-                (function loop() {
-                    return getAllStackEvents(name)
-                        .then(function (allEvents) {
-                            running = false;
-                            _.forEach(allEvents, function (event) {
-                                // if event has already been seen, don't add to events to process list
-                                if (displayedEvents[event.EventId]) {
-                                    return;
-                                }
-                                events.push(event);
-                            });
-                            return _processEvents(events);
-                        }).catch(function (err) {
-                            // if stack does not exist, notify success
-                            if (err && notExists.test(err)) {
-                                return _success();
+                return getAllStackEvents(name)
+                    .then(function (allEvents) {
+                        running = false;
+                        _.forEach(allEvents, function (event) {
+                            // if event has already been seen, don't add to events to process list
+                            if (displayedEvents[event.EventId]) {
+                                return;
                             }
-                            // if throttling has occurred, process events again
-                            if (err && throttling.test(err)) {
-                                return _processEvents(events);
-                            }
-                            // otherwise, notify of failure
-                            if (err) {
-                                return _failure(err);
-                            }
+                            events.push(event);
                         });
-                })();
+                        return _processEvents(events);
+                    }).catch(function (err) {
+                        // if stack does not exist, notify success
+                        if (err && notExists.test(err)) {
+                            return _success();
+                        }
+                        // if throttling has occurred, process events again
+                        if (err && throttling.test(err)) {
+                            return _processEvents(events);
+                        }
+                        // otherwise, notify of failure
+                        if (err) {
+                            return _failure(err);
+                        }
+                    });
             }, checkStackInterval);
         });
     }
