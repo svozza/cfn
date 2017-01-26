@@ -4,8 +4,7 @@
   "description": "Simple Cloud Formation for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/.bin/xo",
-    "tape": "node test | tap-spec"
+    "test": "mocha -r ./test/common.js"
   },
   "repository": {
     "type": "git",
@@ -61,10 +60,12 @@
     "sprintf": "^0.1.5"
   },
   "devDependencies": {
-    "blue-tape": "^0.2.0",
-    "tap-json": "^1.0.0",
-    "tap-spec": "^4.1.1",
-    "tap-xunit": "^1.4.0",
+    "aws-sdk-mock": "^1.6.1",
+    "mocha": "^3.2.0",
+    "node-uuid": "^1.4.7",
+    "should": "^11.1.2",
+    "should-sinon": "0.0.5",
+    "sinon": "^1.17.7",
     "xo": "^0.16.0"
   }
 }
