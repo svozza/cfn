@@ -172,7 +172,7 @@ function Cfn(name, template) {
                     done = false,
                     allEvents = [];
 
-                function getStackEventsHelper() {
+                function getStackEvents() {
                     return cf.describeStackEvents({
                         StackName: stackName,
                         NextToken: next
@@ -181,10 +181,10 @@ function Cfn(name, template) {
                             next = (data || {}).NextToken;
                             done = !next || !data;
                             allEvents = allEvents.concat(data.StackEvents);
-                            return done ? Promise.resolve() : getStackEventsHelper();
+                            return done ? Promise.resolve() : getStackEvents();
                         });
                 }
-                return getStackEventsHelper().then(function () {
+                return getStackEvents().then(function () {
                     return allEvents;
                 });
             }
