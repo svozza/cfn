@@ -21,7 +21,7 @@ var Promise = require('bluebird'),
     HttpsProxyAgent = require('https-proxy-agent');
 
 var fs = Promise.promisifyAll(filesystem);
-AWS.config.setPromisesDependency(require('bluebird'));
+AWS.config.setPromisesDependency(Promise);
 
 var PROXY = process.env.PROXY,
 
