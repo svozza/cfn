@@ -169,7 +169,6 @@ function Cfn(name, template) {
             // provides all pagination
             function getAllStackEvents(stackName) {
                 var next,
-                    done = false,
                     allEvents = [];
 
                 function getStackEvents() {
@@ -179,9 +178,8 @@ function Cfn(name, template) {
                     }).promise()
                         .then(function (data) {
                             next = (data || {}).NextToken;
-                            done = !next || !data;
                             allEvents = allEvents.concat(data.StackEvents);
-                            return done ? Promise.resolve() : getStackEvents();
+                            return !next ? Promise.resolve() : getStackEvents();
                         });
                 }
                 return getStackEvents().then(function () {
