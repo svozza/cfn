@@ -175,7 +175,8 @@ function Cfn(name, template) {
                     return cf.describeStackEvents({
                         StackName: stackName,
                         NextToken: next
-                    }).promise()
+                    })
+                        .promise()
                         .then(function (data) {
                             next = (data || {}).NextToken;
                             allEvents = allEvents.concat(data.StackEvents);
