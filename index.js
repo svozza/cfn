@@ -21,6 +21,7 @@ var Promise = require('bluebird'),
     HttpsProxyAgent = require('https-proxy-agent');
 
 var fs = Promise.promisifyAll(filesystem);
+AWS.config.setPromisesDependency(Promise);
 
 var PROXY = process.env.PROXY,
 
@@ -83,7 +84,8 @@ function Cfn(name, template) {
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {},
-        async = opts.async;
+        async = opts.async,
+        checkStackInterval = opts.checkStackInterval || 5000;
 
     if (PROXY) {
         awsOpts.httpOptions = {
@@ -95,7 +97,7 @@ function Cfn(name, template) {
     }
 
     // initialize cf
-    var cf = Promise.promisifyAll(new AWS.CloudFormation(awsOpts));
+    var cf = new AWS.CloudFormation(awsOpts);
 
     name = opts.name || name;
     template = opts.template || template;
@@ -110,15 +112,22 @@ function Cfn(name, template) {
             var interval,
                 running = false;
 
+            // on success:
+            // 1. clear interval
+            // 2. return resolved promise
             function _success() {
                 clearInterval(interval);
                 return resolve();
             }
 
+            // on fail:
+            // 1. build fail message
+            // 2. clear interval
+            // 3. return rejected promise with failed message
             function _failure(msg) {
                 var fullMsg = logPrefix + ' Failed' + (msg ? ': ' + msg : '');
                 clearInterval(interval);
-                return reject(fullMsg);
+                return reject(new Error(fullMsg));
             }
 
             function _processEvents(events) {
@@ -144,80 +153,89 @@ function Cfn(name, template) {
                     status = lastEvent.ResourceStatus,
                     statusReason = lastEvent.ResourceStatusReason;
 
-                if (resourceType !== 'AWS::CloudFormation::Stack') {
-                    // Do nothing
-                } else if (_.includes(failed, status)) {
-                    if (timestamp >= startedAt) {
+                // Only fail/succeed on cloud formation stack resource
+                if (resourceType === 'AWS::CloudFormation::Stack') {
+                    // if cf stack status indicates failure AND the failed event occurred during this update, notify of failure
+                    // if cf stack status indicates success, OR it failed before this current update, notify of success
+                    if (_.includes(failed, status) && (timestamp >= startedAt)) {
                         _failure(statusReason);
-                    } else {
+                    } else if (_.includes(success, status) || (_.includes(failed, status) && (timestamp < startedAt))) {
                         _success();
                     }
-                } else if (_.includes(success, status)) {
-                    _success();
                 }
                 running = false;
             }
 
-            interval = setInterval(function () {
+            // provides all pagination
+            function getAllStackEvents(stackName) {
                 var next,
-                    done = false,
-                    events = [];
+                    allEvents = [];
+
+                function getStackEvents() {
+                    return cf.describeStackEvents({
+                        StackName: stackName,
+                        NextToken: next
+                    })
+                        .promise()
+                        .then(function (data) {
+                            next = (data || {}).NextToken;
+                            allEvents = allEvents.concat(data.StackEvents);
+                            return !next ? Promise.resolve() : getStackEvents();
+                        });
+                }
+                return getStackEvents().then(function () {
+                    return allEvents;
+                });
+            }
+
+            interval = setInterval(function () {
+                var events = [];
 
                 if (running) {
                     return;
                 }
                 running = true;
 
-                (function loop() {
-                    cf.describeStackEvents({
-                        StackName: name,
-                        NextToken: next
-                    }, function (err, data) {
-                        try {
-                            if (err && notExists.test(err)) {
-                                return _success();
+                return getAllStackEvents(name)
+                    .then(function (allEvents) {
+                        running = false;
+                        _.forEach(allEvents, function (event) {
+                            // if event has already been seen, don't add to events to process list
+                            if (displayedEvents[event.EventId]) {
+                                return;
                             }
-                            if (err && throttling.test(err)) {
-                                return _processEvents(events);
-                            }
-                            if (err) {
-                                return _failure(err);
-                            }
-                            next = (data || {}).NextToken;
-                            done = !next || err || !data;
-                            running = false;
-
-                            _.forEach(data.StackEvents, function (event) {
-                                if (displayedEvents[event.EventId]) {
-                                    return;
-                                }
-                                events.push(event);
-                            });
-                            if (done) {
-                                _processEvents(events);
-                            } else {
-                                loop();
-                            }
-                        } catch (err) {
-                            _failure(err);
+                            events.push(event);
+                        });
+                        return _processEvents(events);
+                    }).catch(function (err) {
+                        // if stack does not exist, notify success
+                        if (err && notExists.test(err)) {
+                            return _success();
+                        }
+                        // if throttling has occurred, process events again
+                        if (err && throttling.test(err)) {
+                            return _processEvents(events);
+                        }
+                        // otherwise, notify of failure
+                        if (err) {
+                            return _failure(err);
                         }
                     });
-                })();
-            }, 5000);
+            }, checkStackInterval);
         });
     }
 
     function processCfStack(action, cfparms) {
         startedAt = Date.now();
         if (action === 'update') {
-            return cf.updateStackAsync(cfparms)
+            return cf.updateStack(cfparms).promise()
                 .catch(function (err) {
                     if (!/No updates are to be performed/.test(err)) {
                         throw err;
                     }
                 });
         }
-        return cf.createStackAsync(cfparms);
+        return cf.createStack(cfparms).promise();
     }
 
     function loadJs(path) {
@@ -262,7 +280,7 @@ function Cfn(name, template) {
     }
 
     this.stackExists = function (overrideName) {
-        return cf.describeStacksAsync({ StackName: overrideName || name })
+        return cf.describeStacks({ StackName: overrideName || name }).promise()
             .then(function (data) {
                 return _.includes(exists, data.Stacks[0].StackStatus);
             })
@@ -280,14 +298,14 @@ function Cfn(name, template) {
 
     this.delete = function (overrideName) {
         startedAt = Date.now();
-        return cf.deleteStackAsync({ StackName: overrideName || name })
+        return cf.deleteStack({ StackName: overrideName || name }).promise()
             .then(function () {
                 return async ? Promise.resolve() : checkStack('delete', overrideName || name);
             });
     };
 
     this.outputs = function () {
-        return cf.describeStacksAsync({ StackName: name })
+        return cf.describeStacks({ StackName: name }).promise()
             .then(function (data) {
                 return flow(
                     get('Stacks[0].Outputs'),
@@ -311,7 +329,7 @@ function Cfn(name, template) {
         startedAt = Date.now();
         return (function loop() {
             if (!done) {
-                return cf.listStacksAsync({
+                return cf.listStacks({
                     NextToken: next,
                     StackStatusFilter: [
                         'CREATE_COMPLETE',
@@ -321,7 +339,7 @@ function Cfn(name, template) {
                         'UPDATE_COMPLETE'
 
                     ]
-                })
+                }).promise()
                     .then(function (data) {
                         next = data.NextToken;
                         done = !next;
