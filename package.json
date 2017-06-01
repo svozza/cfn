@@ -4,8 +4,8 @@
   "description": "Simple AWS CloudFormation for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "(standard | snazzy) && mocha",
-    "coveralls": "nyc --reporter=text-lcov mocha | coveralls"
+    "test": "(standard | snazzy) && nyc mocha",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
@@ -62,7 +62,6 @@
   },
   "devDependencies": {
     "aws-sdk-mock": "^1.6.1",
-    "coveralls": "^2.13.1",
     "mocha": "^3.2.0",
     "node-uuid": "^1.4.7",
     "nyc": "^11.0.1",
