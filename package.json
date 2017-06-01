@@ -66,6 +66,8 @@
     "node-uuid": "^1.4.7",
     "should": "^11.1.2",
     "should-sinon": "0.0.5",
-    "sinon": "^1.17.7"
+    "sinon": "^1.17.7",
+    "snazzy": "^7.0.0",
+    "standard": "^10.0.2"
   }
 }
