@@ -4,6 +4,6 @@ node_js:
   - "6"
   - "4.3"
 script:
-  - npm test
+  - yarn test
 after_success:
-  - npm run coveralls
+  - yarn run coveralls
