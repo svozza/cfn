@@ -1,7 +1,7 @@
 {
   "name": "cfn",
   "version": "0.18.0",
-  "description": "Simple Cloud Formation for Node.js",
+  "description": "Simple AWS CloudFormation for Node.js",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
@@ -49,6 +49,14 @@
   "bugs": {
     "url": "https://github.com/Nordstrom/cfn/issues"
   },
+  "contributors": [
+    "Andy Day (https://github.com/andyday)",
+    "Katie Steinberg (https://github.com/steinbergkh)",
+    "Yun Wang <jenny.wang240@gmail.com> (https://github.com/yunwang240)",
+    "James Allen (https://github.com/jamesallen-vol)",
+    "Brendan Abbott <brendan@bloodbone.ws> (https://github.com/brendo)",
+    "Robert Stettner <robert.stettner@gmail.com> (https://github.com/robertstettner)"
+  ],
   "homepage": "https://github.com/Nordstrom/cfn#readme",
   "dependencies": {
     "aws-sdk": "^2.7.17",
@@ -57,7 +65,8 @@
     "https-proxy-agent": "^1.0.0",
     "lodash": "^4.13.1",
     "moment": "^2.13.0",
-    "sprintf": "^0.1.5"
+    "sprintf": "^0.1.5",
+    "yamljs": "0.2.10"
   },
   "devDependencies": {
     "aws-sdk-mock": "^1.6.1",

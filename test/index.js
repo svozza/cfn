@@ -109,15 +109,15 @@ describe('create/update', function() {
                     StackEvents: stackEvents.updateComplete
                 });
             });
-        })
+        });
 
         describe('if stack already exists', function(){
             var successStub;
             beforeEach(function(){
                 successStub = sinon.stub().callsArgWith(1, null, require('./mocks/describe-stacks').response);
                 describeStacksStub = AWS.mock('CloudFormation', 'describeStacks', successStub);
-            })
-            it('updates stack', function(){
+            });
+            it('updates stack from json template file without parameters', function(){
                 var cfn = require('../');
                 return cfn('TEST-JSON-TEMPLATE', path.join(__dirname, '/templates/test-template-1.json'))
                     .then(function (data) {
@@ -126,14 +126,114 @@ describe('create/update', function() {
                         updateStackStub.stub.should.be.calledOnce();
                     });
             });
+            it('updates stack from yaml template string without parameters', function(){
+                var cfn = require('../');
+                return cfn('TEST-YAML-TEMPLATE',
+                    "---\n" +
+                    "AWSTemplateFormatVersion: '2010-09-09'\n" +
+                    "Description: Test Stack\n" +
+                    "Resources:\n" +
+                    "  testTable:\n" +
+                    "    Type: AWS::DynamoDB::Table\n" +
+                    "    Properties:\n" +
+                    "      AttributeDefinitions:\n" +
+                    "      - AttributeName: id\n" +
+                    "        AttributeType: S\n" +
+                    "      KeySchema:\n" +
+                    "      - AttributeName: id\n" +
+                    "        KeyType: HASH\n" +
+                    "      ProvisionedThroughput:\n" +
+                    "        ReadCapacityUnits: '1'\n" +
+                    "        WriteCapacityUnits: '1'\n" +
+                    "      TableName: TEST-TABLE-6\n"
+                )
+                    .then(function (data) {
+                        createStackStub.stub.should.not.be.called();
+                        updateStackStub.stub.should.be.calledOnce();
+                        return data;
+                    })
+            });
+            it('updates stack from json template file with CloudFormation parameters', function(){
+                var cfn = require('../');
+                return cfn({
+                    name: 'TEST-JSON-TEMPLATE',
+                    template: path.join(__dirname, '/templates/test-template-4.json'),
+                    cfParams: {
+                        TableName: 'TestTable'
+                    }
+                })
+                    .then(function (data) {
+                        createStackStub.stub.should.not.be.called();
+                        updateStackStub.stub.should.be.calledOnce();
+                        updateStackStub.stub.should.be.calledWithMatch({
+                            Parameters: [
+                                {
+                                    ParameterKey: 'TableName',
+                                    ParameterValue: 'TestTable'
+                                }
+                            ]
+                        });
+                        return data;
+                    });
+            });
+            it('updates stack from yaml template file with CloudFormation parameters', function(){
+                var cfn = require('../');
+                return cfn({
+                    name: 'TEST-YAML-TEMPLATE',
+                    template: path.join(__dirname, '/templates/test-template-5.yml'),
+                    cfParams: {
+                        TableName: 'TestTable'
+                    }
+                })
+                    .then(function (data) {
+                        createStackStub.stub.should.not.be.called();
+                        updateStackStub.stub.should.be.calledOnce();
+                        updateStackStub.stub.should.be.calledWithMatch({
+                            Parameters: [
+                                {
+                                    ParameterKey: 'TableName',
+                                    ParameterValue: 'TestTable'
+                                }
+                            ]
+                        });
+                        return data;
+                    });
+            });
+            it('updates stack from js module file with module and CloudFormation parameters', function(){
+                var cfn = require('../');
+                return cfn({
+                    name: 'TEST-JS-TEMPLATE',
+                    template: path.join(__dirname, '/templates/test-template-6.js'),
+                    cfParams: {
+                        readCap: '1'
+                    },
+                    params: {
+                        testParam: 'FOR-JS-TEMPLATE'
+                    }
+                })
+                    .then(function (data) {
+                        createStackStub.stub.should.not.be.called();
+                        updateStackStub.stub.should.be.calledOnce();
+                        updateStackStub.stub.should.be.calledWithMatch({
+                            Parameters: [
+                                {
+                                    ParameterKey: 'readCap',
+                                    ParameterValue: '1'
+                                }
+                            ]
+                        });
+                        updateStackStub.stub.firstCall.args[0].TemplateBody.should.match(/"TableName":"TEST-TABLE-6-FOR-JS-TEMPLATE"/);
+                        return data;
+                    });
+            });
         });
         describe('if stack does not exist', function(){
             beforeEach(function(){
                 // callback w/ err to simulate stack doesn't exist
                 describeStacksStub = AWS.mock('CloudFormation', 'describeStacks',
                     sinon.stub().callsArgWith(1, 'stack does not exist!', null));
-            })
-            it('creates stack', function(){
+            });
+            it('creates json stack from file without parameters', function(){
                 var cfn = require('../');
                 return cfn('TEST-JSON-TEMPLATE', path.join(__dirname, '/templates/test-template-1.json'))
                     .then(function (data) {
@@ -141,7 +241,130 @@ describe('create/update', function() {
                         updateStackStub.stub.should.not.be.called();
                         return data;
                     })
-            })
+            });
+            it('creates stack from yaml template string without parameters', function(){
+                var cfn = require('../');
+                return cfn('TEST-JSON-TEMPLATE',
+                            "---\n" +
+                            "AWSTemplateFormatVersion: '2010-09-09'\n" +
+                            "Description: Test Stack\n" +
+                            "Resources:\n" +
+                            "  testTable:\n" +
+                            "    Type: AWS::DynamoDB::Table\n" +
+                            "    Properties:\n" +
+                            "      AttributeDefinitions:\n" +
+                            "      - AttributeName: id\n" +
+                            "        AttributeType: S\n" +
+                            "      KeySchema:\n" +
+                            "      - AttributeName: id\n" +
+                            "        KeyType: HASH\n" +
+                            "      ProvisionedThroughput:\n" +
+                            "        ReadCapacityUnits: '1'\n" +
+                            "        WriteCapacityUnits: '1'\n" +
+                            "      TableName: TEST-TABLE-6"
+                )
+                    .then(function (data) {
+                        createStackStub.stub.should.be.calledOnce();
+                        updateStackStub.stub.should.not.be.called();
+                        return data;
+                    })
+            });
+            it('creates stack from json template file with CloudFormation parameters', function(){
+                var cfn = require('../');
+                return cfn({
+                    name: 'TEST-JSON-TEMPLATE',
+                    template: path.join(__dirname, '/templates/test-template-4.json'),
+                    cfParams: {
+                        TableName: 'TestTable'
+                    }
+                })
+                    .then(function (data) {
+                        createStackStub.stub.should.be.calledOnce();
+                        createStackStub.stub.should.be.calledWithMatch({
+                            Parameters: [
+                                {
+                                    ParameterKey: 'TableName',
+                                    ParameterValue: 'TestTable'
+                                }
+                            ]
+                        });
+                        updateStackStub.stub.should.not.be.called();
+                        return data;
+                    });
+            });
+            it('creates stack from yaml template file with CloudFormation parameters', function(){
+                var cfn = require('../');
+                return cfn({
+                    name: 'TEST-JSON-TEMPLATE',
+                    template: path.join(__dirname, '/templates/test-template-5.yml'),
+                    cfParams: {
+                        TableName: 'TestTable'
+                    }
+                })
+                    .then(function (data) {
+                        createStackStub.stub.should.be.calledOnce();
+                        createStackStub.stub.should.be.calledWithMatch({
+                            Parameters: [
+                                {
+                                    ParameterKey: 'TableName',
+                                    ParameterValue: 'TestTable'
+                                }
+                            ]
+                        });
+                        updateStackStub.stub.should.not.be.called();
+                        return data;
+                    });
+            });
+            it('creates stack from yaml template file with CloudFormation parameters', function(){
+                var cfn = require('../');
+                return cfn({
+                    name: 'TEST-JSON-TEMPLATE',
+                    template: path.join(__dirname, '/templates/test-template-5.yml'),
+                    cfParams: {
+                        TableName: 'TestTable'
+                    }
+                })
+                    .then(function (data) {
+                        createStackStub.stub.should.be.calledOnce();
+                        createStackStub.stub.should.be.calledWithMatch({
+                            Parameters: [
+                                {
+                                    ParameterKey: 'TableName',
+                                    ParameterValue: 'TestTable'
+                                }
+                            ]
+                        });
+                        updateStackStub.stub.should.not.be.called();
+                        return data;
+                    });
+            });
+            it('creates stack from js module file with module and CloudFormation parameters', function(){
+                var cfn = require('../');
+                return cfn({
+                    name: 'TEST-JS-TEMPLATE',
+                    template: path.join(__dirname, '/templates/test-template-6.js'),
+                    cfParams: {
+                        readCap: '1'
+                    },
+                    params: {
+                        testParam: 'FOR-JS-TEMPLATE'
+                    }
+                })
+                    .then(function (data) {
+                        updateStackStub.stub.should.not.be.called();
+                        createStackStub.stub.should.be.calledOnce();
+                        createStackStub.stub.should.be.calledWithMatch({
+                            Parameters: [
+                                {
+                                    ParameterKey: 'readCap',
+                                    ParameterValue: '1'
+                                }
+                            ]
+                        });
+                        createStackStub.stub.firstCall.args[0].TemplateBody.should.match(/"TableName":"TEST-TABLE-6-FOR-JS-TEMPLATE"/);
+                        return data;
+                    });
+            });
         })
     });
 });
@@ -160,7 +383,7 @@ describe('CF templates',function(){
 
         AWS.mock('CloudFormation', 'describeStacks',
             sinon.stub().callsArgWith(1, null, require('./mocks/describe-stacks').response));
-    })
+    });
     describe('Create / Update json template', function () {
         it('renders json string template correctly', function(){
             var cfn = require('../');

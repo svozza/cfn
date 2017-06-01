@@ -9,6 +9,7 @@
 var filesystem = require('fs');
 
 var Promise = require('bluebird'),
+    YAML = require('yamljs'),
     AWS = require('aws-sdk'),
     _ = require('lodash'),
     sprintf = require('sprintf'),
@@ -81,6 +82,7 @@ function Cfn(name, template) {
         opts = _.isPlainObject(name) ? name : {},
         startedAt = Date.now(),
         params = opts.params,
+        cfParams = opts.cfParams || {},
         awsConfig = opts.awsConfig,
         capabilities = opts.capabilities || ['CAPABILITY_IAM'],
         awsOpts = {},
@@ -247,6 +249,38 @@ function Cfn(name, template) {
         return Promise.resolve(JSON.stringify(fn(params)));
     }
 
+    function convertParams(p) {
+        if (!_.isPlainObject(p)) return [];
+        return (Object.keys(p)).map(function (key) {
+            return {
+                ParameterKey: key,
+                ParameterValue: p[key]
+            };
+        });
+    }
+
+    function isStringOfType(type, str) {
+        var result = true;
+        try {
+            type.parse(str);
+        } catch (ignore) {
+            result = false;
+        }
+        return result;
+    }
+
+    function isJSONString(str) {
+        return isStringOfType(JSON, str);
+    }
+
+    function isYAMLString(str) {
+        return isStringOfType(YAML, str) && str.split(/\r\n|\r|\n/).length > 1;
+    }
+
+    function isValidTemplateString(str) {
+        return isJSONString(str) || isYAMLString(str);
+    }
+
     function processStack(action, name, template) {
         var promise;
 
@@ -257,8 +291,13 @@ function Cfn(name, template) {
                 break;
 
             // Check if template is an object, assume this is JSON good to go
-            case _.isObjectLike(template):
+            case _.isPlainObject(template):
                 promise = Promise.resolve(JSON.stringify(template));
+                break;
+
+            // Check if template is a valid string, serialised json or yaml
+            case isValidTemplateString(template):
+                promise = Promise.resolve(template);
                 break;
 
             // Default to loading template from file.
@@ -271,7 +310,8 @@ function Cfn(name, template) {
                 return processCfStack(action, {
                     StackName: name,
                     Capabilities: capabilities,
-                    TemplateBody: data
+                    TemplateBody: data,
+                    Parameters: convertParams(cfParams)
                 });
             })
             .then(function () {
