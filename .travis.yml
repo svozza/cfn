@@ -1,4 +1,9 @@
 language: node_js
 node_js:
+  - "7"
   - "6"
-  - "4.4"
+  - "4.3"
+script:
+  - npm test
+after_success:
+  - npm run coveralls

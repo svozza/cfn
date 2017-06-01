@@ -4,7 +4,8 @@
   "description": "Simple AWS CloudFormation for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "(standard | snazzy) && mocha",
+    "coveralls": "nyc --reporter=text-lcov mocha | coveralls"
   },
   "repository": {
     "type": "git",
@@ -16,25 +17,6 @@
     "package.json",
     "README.md"
   ],
-  "xo": {
-    "space": 4,
-    "rules": {
-      "max-lines": [
-        "warn",
-        400
-      ],
-      "babel/object-curly-spacing": [
-        "error",
-        "always"
-      ],
-      "one-var": "off",
-      "operator-linebreak": [
-        "error",
-        "before"
-      ],
-      "no-use-extend-native/no-use-extend-native": "off"
-    }
-  },
   "keywords": [
     "Cloud",
     "Formation",
@@ -52,12 +34,22 @@
   "contributors": [
     "Andy Day (https://github.com/andyday)",
     "Katie Steinberg (https://github.com/steinbergkh)",
-    "Yun Wang <jenny.wang240@gmail.com> (https://github.com/yunwang240)",
+    "Yun Wang (https://github.com/yunwang240)",
     "James Allen (https://github.com/jamesallen-vol)",
-    "Brendan Abbott <brendan@bloodbone.ws> (https://github.com/brendo)",
-    "Robert Stettner <robert.stettner@gmail.com> (https://github.com/robertstettner)"
+    "Brendan Abbott (https://github.com/brendo)",
+    "Robert Stettner (https://github.com/robertstettner)"
   ],
   "homepage": "https://github.com/Nordstrom/cfn#readme",
+  "standard": {
+    "globals": [
+      "describe",
+      "it",
+      "before",
+      "beforeEach",
+      "after",
+      "afterEach"
+    ]
+  },
   "dependencies": {
     "aws-sdk": "^2.7.17",
     "bluebird": "^3.4.1",
@@ -74,7 +66,6 @@
     "node-uuid": "^1.4.7",
     "should": "^11.1.2",
     "should-sinon": "0.0.5",
-    "sinon": "^1.17.7",
-    "xo": "^0.16.0"
+    "sinon": "^1.17.7"
   }
 }
