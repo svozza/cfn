@@ -9,8 +9,12 @@ require('should-sinon')
 
 const AWS = require('aws-sdk-mock')
 
+const cfn = require('../')
+
+cfn.configure({checkStackInterval: 10})
+
 describe('create/update', function () {
-  this.timeout(6000)
+  // this.timeout(6000)
   let describeStackEventsStub
   let numDescribeStackEventsCalls
   let describeStacksStub  // eslint-disable-line
@@ -77,7 +81,7 @@ describe('create/update', function () {
     })
     it('should loop until update is complete', function () {
       var cfn = require('../')
-      return cfn({name: 'TEST-JSON-TEMPLATE', checkStackInterval: 1000},
+      return cfn({name: 'TEST-JSON-TEMPLATE'},
                 path.join(__dirname, '/templates/test-template-1.json'))
                 .then(function (res) {
                   describeStackEventsStub.stub.should.be.calledTwice()

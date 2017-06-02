@@ -77,6 +77,10 @@ const ings = {
   update: 'Updating'
 }
 
+let _config = {
+  checkStackInterval: 5000
+}
+
 function Cfn (name, template) {
   let log = console.log
   let opts = _.isPlainObject(name) ? name : {}
@@ -87,7 +91,7 @@ function Cfn (name, template) {
   let capabilities = opts.capabilities || ['CAPABILITY_IAM']
   let awsOpts = {}
   let async = opts.async
-  let checkStackInterval = opts.checkStackInterval || 5000
+  let checkStackInterval = opts.checkStackInterval || _config.checkStackInterval
 
   if (PROXY) {
     awsOpts.httpOptions = {
@@ -440,6 +444,10 @@ cfn.outputs = function (name) {
 
 cfn.cleanup = function (regex, daysOld, dryRun) {
   return new Cfn().cleanup(regex, daysOld, dryRun)
+}
+
+cfn.configure = function (cfg) {
+  _config = cfg
 }
 
 module.exports = cfn
