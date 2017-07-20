@@ -118,18 +118,18 @@ function Cfn (name, template) {
       let interval
       let running = false
 
-            // on success:
-            // 1. clear interval
-            // 2. return resolved promise
+      // on success:
+      // 1. clear interval
+      // 2. return resolved promise
       function _success () {
         clearInterval(interval)
         return resolve()
       }
 
-            // on fail:
-            // 1. build fail message
-            // 2. clear interval
-            // 3. return rejected promise with failed message
+      // on fail:
+      // 1. build fail message
+      // 2. clear interval
+      // 3. return rejected promise with failed message
       function _failure (msg) {
         const fullMsg = logPrefix + ' Failed' + (msg ? ': ' + msg : '')
         clearInterval(interval)
@@ -285,31 +285,35 @@ function Cfn (name, template) {
     return isJSONString(str) || isYAMLString(str)
   }
 
-  function processStack (action, name, template) {
+  function processTemplate (template) {
     let promise
 
     switch (true) {
-            // Check if template if a `js` file
+      // Check if template if a `js` file
       case _.endsWith(template, '.js'):
         promise = loadJs(template)
         break
 
-            // Check if template is an object, assume this is JSON good to go
+      // Check if template is an object, assume this is JSON good to go
       case _.isPlainObject(template):
         promise = Promise.resolve(JSON.stringify(template))
         break
 
-            // Check if template is a valid string, serialised json or yaml
+      // Check if template is a valid string, serialised json or yaml
       case isValidTemplateString(template):
         promise = Promise.resolve(template)
         break
 
-            // Default to loading template from file.
+      // Default to loading template from file.
       default:
         promise = fs.readFileAsync(template, 'utf8')
     }
 
     return promise
+  }
+
+  function processStack (action, name, template) {
+    return processTemplate(template)
             .then(function (data) {
               return processCfStack(action, {
                 StackName: name,
@@ -346,6 +350,15 @@ function Cfn (name, template) {
             .then(function () {
               return async ? Promise.resolve() : checkStack('delete', overrideName || name)
             })
+  }
+
+  this.validate = function () {
+    return processTemplate(template)
+      .then(function (data) {
+        return cf.validateTemplate({
+          TemplateBody: data
+        }).promise()
+      })
   }
 
   this.outputs = function () {
@@ -438,6 +451,16 @@ cfn.delete = function (name) {
   return new Cfn(name).delete()
 }
 
+cfn.validate = function (region, template, params) {
+  return new Cfn({
+    template: template,
+    params: params,
+    awsConfig: {
+      region: region
+    }
+  }).validate()
+}
+
 cfn.outputs = function (name) {
   return new Cfn(name).outputs()
 }
@@ -449,5 +472,7 @@ cfn.cleanup = function (regex, daysOld, dryRun) {
 cfn.configure = function (cfg) {
   _config = cfg
 }
+
+cfn.class = Cfn
 
 module.exports = cfn

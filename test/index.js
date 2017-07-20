@@ -17,14 +17,12 @@ describe('create/update', function () {
   // this.timeout(6000)
   let describeStackEventsStub
   let numDescribeStackEventsCalls
-  let describeStacksStub  // eslint-disable-line
-  let updateStackStub     // eslint-disable-line
 
   beforeEach(function () {
-    describeStacksStub = AWS.mock('CloudFormation', 'describeStacks', function (params, callback) {
+    AWS.mock('CloudFormation', 'describeStacks', function (params, callback) {
       callback(null, require('./mocks/describe-stacks').response)
     })
-    updateStackStub = AWS.mock('CloudFormation', 'updateStack', function (params, callback) {
+    AWS.mock('CloudFormation', 'updateStack', function (params, callback) {
       callback(null, 'success!')
     })
   })
@@ -118,7 +116,7 @@ describe('create/update', function () {
       var successStub
       beforeEach(function () {
         successStub = sinon.stub().callsArgWith(1, null, require('./mocks/describe-stacks').response)
-        describeStacksStub = AWS.mock('CloudFormation', 'describeStacks', successStub)
+        AWS.mock('CloudFormation', 'describeStacks', successStub)
       })
       it('updates stack from json template file without parameters', function () {
         var cfn = require('../')
@@ -233,7 +231,7 @@ describe('create/update', function () {
     describe('if stack does not exist', function () {
       beforeEach(function () {
                 // callback w/ err to simulate stack doesn't exist
-        describeStacksStub = AWS.mock('CloudFormation', 'describeStacks',
+        AWS.mock('CloudFormation', 'describeStacks',
                     sinon.stub().callsArgWith(1, 'stack does not exist!', null))
       })
       it('creates json stack from file without parameters', function () {
@@ -369,6 +367,105 @@ describe('create/update', function () {
                     })
       })
     })
+  })
+})
+
+describe('validate', function () {
+  let validateStub
+
+  beforeEach(function () {
+    AWS.restore()
+    validateStub = AWS.mock('CloudFormation', 'validateTemplate', require('./mocks/validate')())
+  })
+
+  it('should validate a valid json template file', function () {
+    var cfn = require('../')
+    return cfn.validate('us-west-2', path.join(__dirname, '/templates/test-template-1.json'))
+      .then(function (data) {
+        data.should.be.an.Object()
+        data.Description.should.equal('Test Stack')
+        data.Parameters.should.be.an.Array()
+        data.Parameters.should.be.empty()
+        validateStub.stub.should.be.calledOnce()
+      })
+  })
+  it('should validate a valid yml template file', function () {
+    var cfn = require('../')
+    return cfn.validate('us-west-2', path.join(__dirname, '/templates/test-template-5.yml'))
+      .then(function (data) {
+        data.should.be.an.Object()
+        data.Description.should.equal('Test Stack')
+        data.Parameters.should.be.an.Array()
+        data.Parameters.should.be.empty()
+        validateStub.stub.should.be.calledOnce()
+      })
+  })
+  it('should validate a valid js module file using interpolated module parameters', function () {
+    var cfn = require('../')
+    return cfn.validate('us-west-2', path.join(__dirname, '/templates/test-template-3.js'), { testParam: 'TEST' })
+      .then(function (data) {
+        data.should.be.an.Object()
+        data.Description.should.equal('Test Stack')
+        data.Parameters.should.be.an.Array()
+        data.Parameters.should.be.empty()
+        validateStub.stub.should.be.calledOnce()
+      })
+  })
+  it('should validate a valid yml inline template', function () {
+    var cfn = require('../')
+    return cfn.validate('us-west-2', '---\n' +
+      "AWSTemplateFormatVersion: '2010-09-09'\n" +
+      'Description: Test Stack\n' +
+      'Resources:\n' +
+      '  testTable:\n' +
+      '    Type: AWS::DynamoDB::Table\n' +
+      '    Properties:\n' +
+      '      AttributeDefinitions:\n' +
+      '      - AttributeName: id\n' +
+      '        AttributeType: S\n' +
+      '      KeySchema:\n' +
+      '      - AttributeName: id\n' +
+      '        KeyType: HASH\n' +
+      '      ProvisionedThroughput:\n' +
+      "        ReadCapacityUnits: '1'\n" +
+      "        WriteCapacityUnits: '1'\n" +
+      '      TableName: TEST-TABLE-6')
+      .then(function (data) {
+        data.should.be.an.Object()
+        data.Description.should.equal('Test Stack')
+        data.Parameters.should.be.an.Array()
+        data.Parameters.should.be.empty()
+        validateStub.stub.should.be.calledOnce()
+      })
+  })
+  it('should validate a invalid yml inline template', function () {
+    AWS.restore('CloudFormation') // needs to be here, as there is some weird state in AWS that doesn't allow mocks to be overwritten
+    validateStub = AWS.mock('CloudFormation', 'validateTemplate', require('./mocks/validate')(new Error('Template format error: Unresolved resource dependencies [TableName] in the Resources block of the template')))
+    var cfn = require('../')
+    return cfn.validate('us-west-2', '---\n' +
+      "AWSTemplateFormatVersion: '2010-09-09'\n" +
+      'Description: Test Stack\n' +
+      'Resources:\n' +
+      '  testTable:\n' +
+      '    Type: AWS::DynamoDB::Table\n' +
+      '    Properties:\n' +
+      '      AttributeDefinitions:\n' +
+      '      - AttributeName: id\n' +
+      '        AttributeType: S\n' +
+      '      KeySchema:\n' +
+      '      - AttributeName: id\n' +
+      '        KeyType: HASH\n' +
+      '      ProvisionedThroughput:\n' +
+      "        ReadCapacityUnits: '1'\n" +
+      "        WriteCapacityUnits: '1'\n" +
+      '      TableName: !Ref TableName')
+      .then(function () {
+        throw new Error('has not produced invalidation error')
+      }, function (err) {
+        err.should.be.an.Error()
+        err.message.should.equal('Template format error: Unresolved resource dependencies [TableName] in the Resources block of the template')
+        validateStub.stub.should.be.calledOnce()
+      })
   })
 })
 

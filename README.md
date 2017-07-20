@@ -14,6 +14,10 @@ cfn makes the following AWS CloudFormation tasks simpler.
 * Use regex pattern to delete stacks.
 * Include `daysOld` to delete stacks this old.
 
+##### Validate Templates
+* Checks if a template is valid
+* Returns a Promises.  Resolves when template is valid, Rejects if there is an error.
+
 ## Install
 ```
 $ npm install cfn --save-dev
@@ -69,13 +73,40 @@ cfn.cleanup({
 ### Stack Exists
 Returns a boolean if a stack exists or not
 ```javascript
-//Returns boolean if stack name 'foo-bar' exists
+// Returns boolean if stack name 'foo-bar' exists
 cfn.stackExists('foo-bar')
     .then(function(exists){
         if (exists){
             //Do something
         }
     })
+```
+
+### Validate
+Checks if a template is valid
+```javascript
+// Validate a template.js Node.js module.
+cfn({
+    template: __dirname + '/template.js',
+    params: {
+        foo: 'bar'
+    },
+    awsConfig: {
+        region: 'us-west-2'
+    }
+}).validate()
+    .then(function(data){
+        //Stack is valid do something
+    },
+    function(err){
+        //Stack is invalid
+    })
+
+// Validate a json template.
+cfn.validate('us-west-2', 'template.json');
+
+// Validate a yaml template.
+cfn.validate('us-west-2', 'template.yml');
 ```
 
 ## API
