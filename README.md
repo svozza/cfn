@@ -121,7 +121,7 @@ The name of the stack to Create / Update.  If the first arg is a string it is us
 Options object.  If the first arg is an object it will be used as options.
 
 #### template
-Path to template (js, yaml or json file), JSON object, serialized JSON string, or a YAML string. This is optional and if given will override options.template (if present).  This arg is helpful if the first arg is the name of the template rather than an options object.
+Path to template (js, yaml or json file), JSON object, serialized JSON string, YAML string, or a S3 Bucket URL. This is optional and if given will override options.template (if present).  This arg is helpful if the first arg is the name of the template rather than an options object.
 
 ##### options.name
 Name of stack.

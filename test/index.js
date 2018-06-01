@@ -494,6 +494,14 @@ describe('CF templates', function () {
                   return data
                 })
     })
+    it('parses s3 https uri template correctly', function () {
+      var cfn = require('../')
+      return cfn('TEST-S3-TEMPLATE', 'https://s3.amazonaws.com/s3/template')
+                .then(function (data) {
+                  updateStackStub.stub.should.be.calledWithCFStackParams('TEST-S3-TEMPLATE', ['CAPABILITY_IAM'], null, 'https://s3.amazonaws.com/s3/template')
+                  return data
+                })
+    })
   })
   describe('Create / Update js template', function () {
     it('creates stack with correct template', function () {

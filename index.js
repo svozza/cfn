@@ -17,6 +17,7 @@ const moment = require('moment')
 const flow = require('lodash/fp/flow')
 const keyBy = require('lodash/fp/keyBy')
 const get = require('lodash/fp/get')
+const merge = require('lodash/merge')
 const mapValues = require('lodash/fp/mapValues')
 const chalk = require('chalk')
 const HttpsProxyAgent = require('https-proxy-agent')
@@ -289,6 +290,11 @@ function Cfn (name, template) {
     let promise
 
     switch (true) {
+      // Check if template is located in S3
+      case isUriTemplate(template):
+        promise = Promise.resolve(template)
+        break
+
       // Check if template if a `js` file
       case _.endsWith(template, '.js'):
         promise = loadJs(template)
@@ -312,15 +318,30 @@ function Cfn (name, template) {
     return promise
   }
 
+  function isUriTemplate (template) {
+    const httpsUri = /https:\/\/s3\.amazonaws.com/
+    return httpsUri.test(template)
+  }
+
+  function templateObject (template) {
+    if (isUriTemplate(template)) {
+      return {
+        TemplateURL: template
+      }
+    }
+    return {
+      TemplateBody: template
+    }
+  }
+
   function processStack (action, name, template) {
     return processTemplate(template)
             .then(function (data) {
-              return processCfStack(action, {
+              return processCfStack(action, merge({
                 StackName: name,
                 Capabilities: capabilities,
-                TemplateBody: data,
                 Parameters: convertParams(cfParams)
-              })
+              }, templateObject(data)))
             })
             .then(function () {
               return async ? Promise.resolve() : checkStack(action, name)
@@ -355,9 +376,7 @@ function Cfn (name, template) {
   this.validate = function () {
     return processTemplate(template)
       .then(function (data) {
-        return cf.validateTemplate({
-          TemplateBody: data
-        }).promise()
+        return cf.validateTemplate(templateObject(data)).promise()
       })
   }
 
