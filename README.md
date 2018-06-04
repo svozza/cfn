@@ -1,4 +1,4 @@
-# cfn [![Build Status](https://travis-ci.org/Nordstrom/cfn.svg?branch=master)](https://travis-ci.org/Nordstrom/cfn) [![Coverage Status](https://coveralls.io/repos/github/Nordstrom/cfn/badge.svg?branch=master)](https://coveralls.io/github/Nordstrom/cfn?branch=master) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com) [![bitHound Overall Score](https://www.bithound.io/github/Nordstrom/cfn/badges/score.svg)](https://www.bithound.io/github/Nordstrom/cfn)
+# cfn [![Build Status](https://travis-ci.org/Nordstrom/cfn.svg?branch=master)](https://travis-ci.org/Nordstrom/cfn) [![Coverage Status](https://coveralls.io/repos/github/Nordstrom/cfn/badge.svg?branch=master)](https://coveralls.io/github/Nordstrom/cfn?branch=master) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 cfn makes the following AWS CloudFormation tasks simpler.
 ##### Create / Update Stack
