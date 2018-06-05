@@ -4,6 +4,6 @@ node_js:
   - "7"
   - "6"
 script:
-  - yarn test
+  - npm test
 after_success:
-  - yarn run coveralls
+  - npm run coveralls
