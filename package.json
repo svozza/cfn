@@ -1,6 +1,6 @@
 {
   "name": "cfn",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Simple AWS CloudFormation for Node.js",
   "main": "index.js",
   "scripts": {
