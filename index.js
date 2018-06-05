@@ -85,12 +85,13 @@ let _config = {
 function Cfn (name, template) {
   let log = console.log
   let opts = _.isPlainObject(name) ? name : {}
+  let awsOpts = {}
   let startedAt = Date.now()
   let params = opts.params
   let cfParams = opts.cfParams || {}
   let awsConfig = opts.awsConfig
   let capabilities = opts.capabilities || ['CAPABILITY_IAM']
-  let awsOpts = {}
+  let tags = opts.tags || {}
   let async = opts.async
   let checkStackInterval = opts.checkStackInterval || _config.checkStackInterval
 
@@ -239,6 +240,8 @@ function Cfn (name, template) {
                 .catch(function (err) {
                   if (!/No updates are to be performed/.test(err)) {
                     throw err
+                  } else {
+                    log('No updates are to be performed.')
                   }
                 })
     }
@@ -260,6 +263,16 @@ function Cfn (name, template) {
       return {
         ParameterKey: key,
         ParameterValue: p[key]
+      }
+    })
+  }
+
+  function convertTags () {
+    if (!_.isPlainObject(tags)) return []
+    return (Object.keys(tags)).map(function (key) {
+      return {
+        Key: key,
+        Value: tags[key]
       }
     })
   }
@@ -340,7 +353,8 @@ function Cfn (name, template) {
               return processCfStack(action, merge({
                 StackName: name,
                 Capabilities: capabilities,
-                Parameters: convertParams(cfParams)
+                Parameters: convertParams(cfParams),
+                Tags: convertTags()
               }, templateObject(data)))
             })
             .then(function () {

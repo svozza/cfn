@@ -30,9 +30,7 @@ Use cfn to create or update an AWS CloudFormation stack.  It returns a promise. 
 json or yaml for AWS CloudFormation templates.
 
 ```javascript
-
 var cfn = require('cfn');
-
 
 // Create or update (if it exists) the Foo-Bar stack with the template.js Node.js module.
 cfn('Foo-Bar', __dirname + '/template.js')
@@ -40,11 +38,32 @@ cfn('Foo-Bar', __dirname + '/template.js')
         console.log('done');
     });
 
-// Create or update the Foo-Bar stack with the template.json json template.
+// json
 cfn('Foo-Bar', 'template.json');
 
-// Create or update the Foo-Bar2 stack with the template.yml yaml template.
+// yaml
 cfn('Foo-Bar2', 'template.yml');
+
+
+// Verbose Syntax
+cfn({
+  name: 'Foo-Bar',
+  template: 'template.yaml',
+  cfParams: {
+    buildNumber: '123',
+  },
+  tags: {
+    app: 'my app',
+    department: 'accounting',
+  },
+  awsConfig: {
+    region: 'us-east-2',
+    accessKeyId: 'akid',
+    secretAccessKey: 'secret',
+  },
+  capabilities: ['CAPABILITY_IAM'],
+  checkStackInterval: 5000,
+});
 
 ```
 

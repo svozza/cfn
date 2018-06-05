@@ -1,8 +1,8 @@
 language: node_js
 node_js:
+  - "8"
   - "7"
   - "6"
-  - "4.3"
 script:
   - yarn test
 after_success:
