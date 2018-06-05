@@ -11,7 +11,7 @@ const AWS = require('aws-sdk-mock')
 
 const cfn = require('../')
 
-cfn.configure({checkStackInterval: 10})
+cfn.configure({ checkStackInterval: 10 })
 
 describe('create/update', function () {
   // this.timeout(6000)
@@ -35,7 +35,7 @@ describe('create/update', function () {
       describeStackEventsStub = AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback) {
         var stackEvents = require('./mocks/stack-events')
         ++numDescribeStackEventsCalls
-                // if next token is provided, respond with mock that has no "NextToken"
+        // if next token is provided, respond with mock that has no "NextToken"
         if (params.NextToken === 'token1') {
           return callback(null, stackEvents.mockDescribeEventsResponsePage2)
         } else {
@@ -45,21 +45,21 @@ describe('create/update', function () {
     })
     it('should call describe stack events twice', function () {
       var cfn = require('../')
-      return cfn({name: 'TEST-JSON-TEMPLATE'}, path.join(__dirname, '/templates/test-template-1.json'))
-                .then(function (res) {
-                  describeStackEventsStub.stub.should.be.calledTwice()
-                    // first call should have nextToken === undefined
-                  var firstCall = describeStackEventsStub.stub.firstCall
-                  firstCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE')
-                  should(firstCall.args[0].NextToken).be.undefined()
+      return cfn({ name: 'test-stack-name' }, path.join(__dirname, '/templates/test-template-1.json'))
+        .then(function (res) {
+          describeStackEventsStub.stub.should.be.calledTwice()
+          // first call should have nextToken === undefined
+          var firstCall = describeStackEventsStub.stub.firstCall
+          firstCall.args[0].StackName.should.equal('test-stack-name')
+          should(firstCall.args[0].NextToken).be.undefined()
 
-                    // second call nextToken should be 'token1'
-                  var secondCall = describeStackEventsStub.stub.secondCall
-                  secondCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE')
-                  secondCall.args[0].NextToken.should.equal('token1')
+          // second call nextToken should be 'token1'
+          var secondCall = describeStackEventsStub.stub.secondCall
+          secondCall.args[0].StackName.should.equal('test-stack-name')
+          secondCall.args[0].NextToken.should.equal('token1')
 
-                  return res
-                })
+          return res
+        })
     })
   })
   describe('if update is in progress', function () {
@@ -68,32 +68,32 @@ describe('create/update', function () {
       describeStackEventsStub = AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback) {
         var stackEvents = require('./mocks/stack-events')
         ++numDescribeStackEventsCalls
-                // on first call, return with update still in progress mock stack events
+        // on first call, return with update still in progress mock stack events
         if (numDescribeStackEventsCalls < 2) {
           return callback(null, { StackEvents: stackEvents.updateInProgress })
         } else {
-                    // on second call, return with stack update complete mock events
+          // on second call, return with stack update complete mock events
           return callback(null, { StackEvents: stackEvents.updateComplete })
         }
       })
     })
     it('should loop until update is complete', function () {
       var cfn = require('../')
-      return cfn({name: 'TEST-JSON-TEMPLATE'},
-                path.join(__dirname, '/templates/test-template-1.json'))
-                .then(function (res) {
-                  describeStackEventsStub.stub.should.be.calledTwice()
-                    // first call should have nextToken === undefined
-                  var firstCall = describeStackEventsStub.stub.firstCall
-                  firstCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE')
-                  should(firstCall.args[0].NextToken).be.undefined()
+      return cfn({ name: 'test-stack-name' },
+        path.join(__dirname, '/templates/test-template-1.json'))
+        .then(function (res) {
+          describeStackEventsStub.stub.should.be.calledTwice()
+          // first call should have nextToken === undefined
+          var firstCall = describeStackEventsStub.stub.firstCall
+          firstCall.args[0].StackName.should.equal('test-stack-name')
+          should(firstCall.args[0].NextToken).be.undefined()
 
-                    // make sure 2nd call isn't due to pagination
-                  var secondCall = describeStackEventsStub.stub.secondCall
-                  secondCall.args[0].StackName.should.equal('TEST-JSON-TEMPLATE')
-                  should(secondCall.args[0].NextToken).be.undefined()
-                  return res
-                })
+          // make sure 2nd call isn't due to pagination
+          var secondCall = describeStackEventsStub.stub.secondCall
+          secondCall.args[0].StackName.should.equal('test-stack-name')
+          should(secondCall.args[0].NextToken).be.undefined()
+          return res
+        })
     })
   })
   describe('createOrUpdate', function () {
@@ -120,90 +120,90 @@ describe('create/update', function () {
       })
       it('updates stack from json template file without parameters', function () {
         var cfn = require('../')
-        return cfn('TEST-JSON-TEMPLATE', path.join(__dirname, '/templates/test-template-1.json'))
-                    .then(function (data) {
-                        // should only have called update, not create
-                      createStackStub.stub.should.not.be.called()
-                      updateStackStub.stub.should.be.calledOnce()
-                    })
+        return cfn('test-stack-name', path.join(__dirname, '/templates/test-template-1.json'))
+          .then(function (data) {
+            // should only have called update, not create
+            createStackStub.stub.should.not.be.called()
+            updateStackStub.stub.should.be.calledOnce()
+          })
       })
       it('updates stack from yaml template string without parameters', function () {
         var cfn = require('../')
-        return cfn('TEST-YAML-TEMPLATE',
-                    '---\n' +
-                    "AWSTemplateFormatVersion: '2010-09-09'\n" +
-                    'Description: Test Stack\n' +
-                    'Resources:\n' +
-                    '  testTable:\n' +
-                    '    Type: AWS::DynamoDB::Table\n' +
-                    '    Properties:\n' +
-                    '      AttributeDefinitions:\n' +
-                    '      - AttributeName: id\n' +
-                    '        AttributeType: S\n' +
-                    '      KeySchema:\n' +
-                    '      - AttributeName: id\n' +
-                    '        KeyType: HASH\n' +
-                    '      ProvisionedThroughput:\n' +
-                    "        ReadCapacityUnits: '1'\n" +
-                    "        WriteCapacityUnits: '1'\n" +
-                    '      TableName: TEST-TABLE-6\n'
-                )
-                    .then(function (data) {
-                      createStackStub.stub.should.not.be.called()
-                      updateStackStub.stub.should.be.calledOnce()
-                      return data
-                    })
+        return cfn('test-stack-name',
+          '---\n' +
+          "AWSTemplateFormatVersion: '2010-09-09'\n" +
+          'Description: Test Stack\n' +
+          'Resources:\n' +
+          '  testTable:\n' +
+          '    Type: AWS::DynamoDB::Table\n' +
+          '    Properties:\n' +
+          '      AttributeDefinitions:\n' +
+          '      - AttributeName: id\n' +
+          '        AttributeType: S\n' +
+          '      KeySchema:\n' +
+          '      - AttributeName: id\n' +
+          '        KeyType: HASH\n' +
+          '      ProvisionedThroughput:\n' +
+          "        ReadCapacityUnits: '1'\n" +
+          "        WriteCapacityUnits: '1'\n" +
+          '      TableName: TEST-TABLE-6\n'
+        )
+          .then(function (data) {
+            createStackStub.stub.should.not.be.called()
+            updateStackStub.stub.should.be.calledOnce()
+            return data
+          })
       })
       it('updates stack from json template file with CloudFormation parameters', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-JSON-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-4.json'),
           cfParams: {
             TableName: 'TestTable'
           }
         })
-                    .then(function (data) {
-                      createStackStub.stub.should.not.be.called()
-                      updateStackStub.stub.should.be.calledOnce()
-                      updateStackStub.stub.should.be.calledWithMatch({
-                        Parameters: [
-                          {
-                            ParameterKey: 'TableName',
-                            ParameterValue: 'TestTable'
-                          }
-                        ]
-                      })
-                      return data
-                    })
+          .then(function (data) {
+            createStackStub.stub.should.not.be.called()
+            updateStackStub.stub.should.be.calledOnce()
+            updateStackStub.stub.should.be.calledWithMatch({
+              Parameters: [
+                {
+                  ParameterKey: 'TableName',
+                  ParameterValue: 'TestTable'
+                }
+              ]
+            })
+            return data
+          })
       })
       it('updates stack from yaml template file with CloudFormation parameters', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-YAML-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-5.yml'),
           cfParams: {
             TableName: 'TestTable'
           }
         })
-                    .then(function (data) {
-                      createStackStub.stub.should.not.be.called()
-                      updateStackStub.stub.should.be.calledOnce()
-                      updateStackStub.stub.should.be.calledWithMatch({
-                        Parameters: [
-                          {
-                            ParameterKey: 'TableName',
-                            ParameterValue: 'TestTable'
-                          }
-                        ]
-                      })
-                      return data
-                    })
+          .then(function (data) {
+            createStackStub.stub.should.not.be.called()
+            updateStackStub.stub.should.be.calledOnce()
+            updateStackStub.stub.should.be.calledWithMatch({
+              Parameters: [
+                {
+                  ParameterKey: 'TableName',
+                  ParameterValue: 'TestTable'
+                }
+              ]
+            })
+            return data
+          })
       })
       it('updates stack from yaml template file with CloudFormation parameters AND tags', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-YAML-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-5.yml'),
           cfParams: {
             TableName: 'TestTable'
@@ -235,7 +235,7 @@ describe('create/update', function () {
       it('updates stack from yaml template file with CloudFormation parameters AND empty tags when none passed', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-YAML-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-5.yml'),
           cfParams: {
             TableName: 'TestTable'
@@ -259,7 +259,7 @@ describe('create/update', function () {
       it('updates stack from js module file with module and CloudFormation parameters', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-JS-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-6.js'),
           cfParams: {
             readCap: '1'
@@ -286,22 +286,22 @@ describe('create/update', function () {
     })
     describe('if stack does not exist', function () {
       beforeEach(function () {
-                // callback w/ err to simulate stack doesn't exist
+        // callback w/ err to simulate stack doesn't exist
         AWS.mock('CloudFormation', 'describeStacks',
-                    sinon.stub().callsArgWith(1, 'stack does not exist!', null))
+          sinon.stub().callsArgWith(1, 'stack does not exist!', null))
       })
       it('creates json stack from file without parameters', function () {
         var cfn = require('../')
-        return cfn('TEST-JSON-TEMPLATE', path.join(__dirname, '/templates/test-template-1.json'))
-                .then(function (data) {
-                  createStackStub.stub.should.be.calledOnce()
-                  updateStackStub.stub.should.not.be.called()
-                  return data
-                })
+        return cfn('test-stack-name', path.join(__dirname, '/templates/test-template-1.json'))
+          .then(function (data) {
+            createStackStub.stub.should.be.calledOnce()
+            updateStackStub.stub.should.not.be.called()
+            return data
+          })
       })
       it('creates stack from yaml template string without parameters', function () {
         var cfn = require('../')
-        return cfn('TEST-JSON-TEMPLATE',
+        return cfn('test-stack-name',
                             '---\n' +
                             "AWSTemplateFormatVersion: '2010-09-09'\n" +
                             'Description: Test Stack\n' +
@@ -329,7 +329,7 @@ describe('create/update', function () {
       it('creates stack from json template file with CloudFormation parameters', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-JSON-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-4.json'),
           cfParams: {
             TableName: 'TestTable'
@@ -352,7 +352,7 @@ describe('create/update', function () {
       it('creates stack from yaml template file with CloudFormation parameters', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-JSON-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-5.yml'),
           cfParams: {
             TableName: 'TestTable'
@@ -375,7 +375,7 @@ describe('create/update', function () {
       it('creates stack from yaml template file with CloudFormation parameters', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-JSON-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-5.yml'),
           cfParams: {
             TableName: 'TestTable'
@@ -398,7 +398,7 @@ describe('create/update', function () {
       it('creates stack from js module file with module and CloudFormation parameters', function () {
         var cfn = require('../')
         return cfn({
-          name: 'TEST-JS-TEMPLATE',
+          name: 'test-stack-name',
           template: path.join(__dirname, '/templates/test-template-6.js'),
           cfParams: {
             readCap: '1'
@@ -530,7 +530,7 @@ describe('CF templates', function () {
   var updateStackStub
   beforeEach(function () {
     AWS.restore()
-        // setup create/update stack stubs
+    // setup create/update stack stubs
     updateStackStub = AWS.mock('CloudFormation', 'updateStack', sinon.stub().callsArgWith(1, null, 'updated'))
 
     AWS.mock('CloudFormation', 'describeStackEvents', function (params, callback) {
@@ -538,36 +538,38 @@ describe('CF templates', function () {
     })
 
     AWS.mock('CloudFormation', 'describeStacks',
-            sinon.stub().callsArgWith(1, null, require('./mocks/describe-stacks').response))
+      sinon.stub().callsArgWith(1, null, require('./mocks/describe-stacks').response))
   })
   describe('Create / Update json template', function () {
     it('renders json string template correctly', function () {
       var cfn = require('../')
-      return cfn('TEST-JSON-TEMPLATE', path.join(__dirname, '/templates/test-template-1.json'))
-                .then(function (data) {
-                  updateStackStub.stub.should.be.calledWithCFStackParams('TEST-JSON-TEMPLATE', ['CAPABILITY_IAM'],
-                        require(path.join(__dirname, '/templates/test-template-1.json')))
-                  return data
-                })
+      return cfn('test-stack-name', path.join(__dirname, '/templates/test-template-1.json'))
+        .then(function (data) {
+          updateStackStub.stub.should.be.calledWithCFStackParams('test-stack-name', ['CAPABILITY_IAM'],
+            require(path.join(__dirname, '/templates/test-template-1.json')))
+          return data
+        })
     })
+  })
+  describe('Create / Update S3 template uri', function () {
     it('parses s3 https uri template correctly', function () {
       var cfn = require('../')
-      return cfn('TEST-S3-TEMPLATE', 'https://s3.amazonaws.com/s3/template')
-                .then(function (data) {
-                  updateStackStub.stub.should.be.calledWithCFStackParams('TEST-S3-TEMPLATE', ['CAPABILITY_IAM'], null, 'https://s3.amazonaws.com/s3/template')
-                  return data
-                })
+      return cfn('test-stack-name', 'https://s3.amazonaws.com/s3/template')
+        .then(function (data) {
+          updateStackStub.stub.should.be.calledWithCFStackParams('test-stack-name', ['CAPABILITY_IAM'], null, 'https://s3.amazonaws.com/s3/template')
+          return data
+        })
     })
   })
   describe('Create / Update js template', function () {
     it('creates stack with correct template', function () {
       var cfn = require('../')
-      return cfn('TEST-JS-TEMPLATE', path.join(__dirname, '/templates/test-template-2.js'))
-                .then(function (data) {
-                  updateStackStub.stub.should.be.calledWithCFStackParams('TEST-JS-TEMPLATE', ['CAPABILITY_IAM'],
-                        require(path.join(__dirname, '/templates/test-template-2.js')))
-                  return data
-                })
+      return cfn('test-stack-name', path.join(__dirname, '/templates/test-template-2.js'))
+        .then(function (data) {
+          updateStackStub.stub.should.be.calledWithCFStackParams('test-stack-name', ['CAPABILITY_IAM'],
+            require(path.join(__dirname, '/templates/test-template-2.js')))
+          return data
+        })
     })
   })
   describe('Create / Update js function template', function () {
@@ -575,12 +577,12 @@ describe('CF templates', function () {
       var cfn = require('../')
       var testParams = { testParam: 'TEST-PARAM' }
       return cfn({
-        name: 'TEST-JS-FN-TEMPLATE',
+        name: 'test-stack-name',
         template: path.join(__dirname, '/templates/test-template-3.js'),
         params: testParams
       }).then(function (data) {
-        updateStackStub.stub.should.be.calledWithCFStackParams('TEST-JS-FN-TEMPLATE', ['CAPABILITY_IAM'],
-                    require(path.join(__dirname, '/templates/test-template-3.js'))(testParams))
+        updateStackStub.stub.should.be.calledWithCFStackParams('test-stack-name', ['CAPABILITY_IAM'],
+          require(path.join(__dirname, '/templates/test-template-3.js'))(testParams))
         return data
       })
     })
