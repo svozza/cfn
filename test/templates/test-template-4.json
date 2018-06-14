@@ -3,7 +3,7 @@
   "Description": "Test Stack",
   "Parameters": {
     "TableName": {
-      "type": "string"
+      "Type": "String"
     }
   },
   "Resources": {

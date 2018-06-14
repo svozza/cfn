@@ -1,5 +1,3 @@
-'use strict'
-
 /**
  * Cloud Formation Module.  Handles stack creation, deletion, and updating.  Adds
  * periodic polling to check stack status.  So that stack operations are
@@ -17,15 +15,15 @@ const moment = require('moment')
 const flow = require('lodash/fp/flow')
 const keyBy = require('lodash/fp/keyBy')
 const get = require('lodash/fp/get')
-const merge = require('lodash/merge')
 const mapValues = require('lodash/fp/mapValues')
+const merge = require('lodash/merge')
 const chalk = require('chalk')
 const HttpsProxyAgent = require('https-proxy-agent')
 
 const fs = Promise.promisifyAll(filesystem)
 AWS.config.setPromisesDependency(Promise)
 
-const PROXY = process.env.PROXY
+const PROXY = process.env.PROXY || process.env.https_proxy || process.env.http_proxy
 
 const ONE_MINUTE = 60000
 
@@ -90,7 +88,7 @@ function Cfn (name, template) {
   let params = opts.params
   let cfParams = opts.cfParams || {}
   let awsConfig = opts.awsConfig
-  let capabilities = opts.capabilities || ['CAPABILITY_IAM']
+  let capabilities = opts.capabilities || ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM']
   let tags = opts.tags || {}
   let async = opts.async
   let checkStackInterval = opts.checkStackInterval || _config.checkStackInterval
@@ -238,13 +236,13 @@ function Cfn (name, template) {
     startedAt = Date.now()
     if (action === 'update') {
       return cf.updateStack(cfparms).promise()
-                .catch(function (err) {
-                  if (!/No updates are to be performed/.test(err)) {
-                    throw err
-                  } else {
-                    log('No updates are to be performed.')
-                  }
-                })
+        .catch(function (err) {
+          if (!/No updates are to be performed/.test(err)) {
+            throw err
+          } else {
+            log('No updates are to be performed.')
+          }
+        })
     }
     return cf.createStack(cfparms).promise()
   }
@@ -258,14 +256,27 @@ function Cfn (name, template) {
     return Promise.resolve(JSON.stringify(fn(params)))
   }
 
-  function convertParams (p) {
-    if (!_.isPlainObject(p)) return []
-    return (Object.keys(p)).map(function (key) {
-      return {
-        ParameterKey: key,
-        ParameterValue: p[key]
-      }
+  function normalizeParams (templateObject, params) {
+    if (!params) return Promise.resolve([])
+    if (!_.isPlainObject(params)) return Promise.resolve([])
+    if (_.keys(params).length <= 0) return Promise.resolve([])
+
+    // mutate params
+    _.keys(params).forEach(k => {
+      params[_.toLower(k)] = params[k]
     })
+    return cf.getTemplateSummary(templateObject).promise()
+      .then(data => {
+        let templateParams = data.Parameters || []
+        return templateParams.map(p => {
+          let k = _.toLower(p.ParameterKey)
+          let v = params[k]
+          return {
+            ParameterKey: p.ParameterKey,
+            ParameterValue: v || p.DefaultValue
+          }
+        })
+      })
   }
 
   function convertTags () {
@@ -301,66 +312,52 @@ function Cfn (name, template) {
   }
 
   function processTemplate (template) {
-    let promise
+    // Check if template is located in S3
+    if (isUriTemplate(template)) return Promise.resolve(template)
 
-    switch (true) {
-      // Check if template is located in S3
-      case isUriTemplate(template):
-        promise = Promise.resolve(template)
-        break
+    // Check if template if a `js` file
+    if (_.endsWith(template, '.js')) return loadJs(template)
 
-      // Check if template if a `js` file
-      case _.endsWith(template, '.js'):
-        promise = loadJs(template)
-        break
+    // Check if template is an object, assume this is JSON good to go
+    if (_.isPlainObject(template)) return Promise.resolve(JSON.stringify(template))
 
-      // Check if template is an object, assume this is JSON good to go
-      case _.isPlainObject(template):
-        promise = Promise.resolve(JSON.stringify(template))
-        break
+    // Check if template is a valid string, serialised json or yaml
+    if (isValidTemplateString(template)) return Promise.resolve(template)
 
-      // Check if template is a valid string, serialised json or yaml
-      case isValidTemplateString(template):
-        promise = Promise.resolve(template)
-        break
-
-      // Default to loading template from file.
-      default:
-        promise = fs.readFileAsync(template, 'utf8')
-    }
-
-    return promise
+    // Default to loading template from file.
+    return fs.readFileAsync(template, 'utf8')
   }
 
   function isUriTemplate (template) {
-    const httpsUri = /https:\/\/s3\.amazonaws.com/
+    const httpsUri = /https:\/\/s3.+amazonaws.com/
     return httpsUri.test(template)
   }
 
   function templateObject (template) {
-    if (isUriTemplate(template)) {
-      return {
-        TemplateURL: template
-      }
-    }
-    return {
-      TemplateBody: template
-    }
+    return isUriTemplate(template)
+      ? {TemplateURL: template}
+      : {TemplateBody: template}
   }
 
   function processStack (action, name, template) {
     return processTemplate(template)
-            .then(function (data) {
-              return processCfStack(action, merge({
-                StackName: name,
-                Capabilities: capabilities,
-                Parameters: convertParams(cfParams),
-                Tags: convertTags()
-              }, templateObject(data)))
-            })
-            .then(function () {
-              return async ? Promise.resolve() : checkStack(action, name)
-            })
+      .then(t => {
+        return templateObject(t)
+      })
+      .then(data => {
+        return normalizeParams(data, cfParams)
+          .then(noramlizedParams => {
+            return processCfStack(action, merge({
+              StackName: name,
+              Capabilities: capabilities,
+              Parameters: noramlizedParams,
+              Tags: convertTags()
+            }, data))
+          })
+      })
+      .then(function () {
+        return async ? Promise.resolve() : checkStack(action, name)
+      })
   }
 
   this.stackExists = function (overrideName) {

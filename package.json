@@ -1,7 +1,7 @@
 {
   "name": "cfn",
   "version": "1.5.1",
-  "description": "Simple AWS CloudFormation for Node.js",
+  "description": "Simple AWS CloudFormation",
   "main": "index.js",
   "scripts": {
     "test": "(standard | snazzy) && nyc mocha",
@@ -12,11 +12,13 @@
     "url": "git+https://github.com/Nordstrom/cfn.git"
   },
   "files": [
-    "index.js",
+    "*.js",
     "LICENSE",
-    "package.json",
-    "README.md"
+    "*.json",
+    "*.lock",
+    "*.md"
   ],
+  "bin": "cli.js",
   "keywords": [
     "Cloud",
     "Formation",
@@ -57,6 +59,7 @@
     "chalk": "^1.1.3",
     "https-proxy-agent": "^2.2.1",
     "lodash": "^4.17.10",
+    "meow": "^3.7.0",
     "moment": "^2.22.2",
     "sprintf": "^0.1.5",
     "yamljs": "0.2.10"

@@ -23,14 +23,29 @@ cfn makes the following AWS CloudFormation tasks simpler.
 $ npm install cfn --save-dev
 ```
 
-## Usage
+## CLI Usage
+
+```
+  Usage
+    cfn deploy {stack name} {template} [--{param key}={param value}...]
+    cfn delete {stack name}
+    cfn outputs {stack name}
+
+  Examples
+    cfn deploy my-stack template.js
+    cfn deploy your_stack template.yml --ImageId=ami-828283 --VpcId=vpc-828283
+    cfn delete your_stack
+    cfn outputs my-stack
+```
+
+## Programmatic Usage 
 
 ### Create / Update
 Use cfn to create or update an AWS CloudFormation stack.  It returns a promise.  You can use Node.js modules or standard
 json or yaml for AWS CloudFormation templates.
 
 ```javascript
-var cfn = require('cfn');
+const cfn = require('cfn');
 
 // Create or update (if it exists) the Foo-Bar stack with the template.js Node.js module.
 cfn('Foo-Bar', __dirname + '/template.js')
