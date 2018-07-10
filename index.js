@@ -265,6 +265,7 @@ function Cfn (name, template) {
     _.keys(params).forEach(k => {
       params[_.toLower(k)] = params[k]
     })
+
     return cf.getTemplateSummary(templateObject).promise()
       .then(data => {
         let templateParams = data.Parameters || []
@@ -329,7 +330,7 @@ function Cfn (name, template) {
   }
 
   function isUriTemplate (template) {
-    const httpsUri = /https:\/\/s3.+amazonaws.com/
+    const httpsUri = /^https:\/\/s3.+amazonaws.com/
     return httpsUri.test(template)
   }
 
