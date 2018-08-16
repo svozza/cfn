@@ -195,7 +195,7 @@ function Cfn (name, template) {
         })
       }
 
-      interval = setInterval(function () {
+      function outputNewStackEvents () {
         let events = []
 
         if (running) {
@@ -228,7 +228,11 @@ function Cfn (name, template) {
               return _failure(err)
             }
           })
-      }, checkStackInterval)
+      }
+
+      // call once and repeat in intervals
+      outputNewStackEvents()
+      interval = setInterval(outputNewStackEvents, checkStackInterval)
     })
   }
 
