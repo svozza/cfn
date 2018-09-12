@@ -4,11 +4,11 @@ cfn makes the following AWS CloudFormation tasks simpler.
 ##### Create / Update Stack
 * If the stack already exists, it Updates; otherwise, it Creates.
 * Monitors stack progress, logging events.
-* Returns a Promises.  Resolves when stack Create / Update is done, Rejects if there is an error.
+* Returns a Promise.  Resolves when stack Create / Update is done, Rejects if there is an error.
 
 ##### Delete Stack
 * Monitors stack progress, logging events.
-* Returns a Promises.  Resolves when stack Create / Update is done, Rejects if there is an error.
+* Returns a Promise.  Resolves when stack Create / Update is done, Rejects if there is an error.
 
 ##### Cleanup Stacks
 * Use regex pattern to delete stacks.
@@ -16,7 +16,7 @@ cfn makes the following AWS CloudFormation tasks simpler.
 
 ##### Validate Templates
 * Checks if a template is valid
-* Returns a Promises.  Resolves when template is valid, Rejects if there is an error.
+* Returns a Promise.  Resolves when template is valid, Rejects if there is an error.
 
 ## Install
 ```
