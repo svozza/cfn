@@ -187,12 +187,18 @@ function Cfn (name, template) {
             .then(function (data) {
               next = (data || {}).NextToken
               allEvents = allEvents.concat(data.StackEvents)
-              return !next ? Promise.resolve() : getStackEvents()
+              return next && !allRelevantEventsLoaded(data.StackEvents) ? getStackEvents() : Promise.resolve()
             })
         }
         return getStackEvents().then(function () {
           return allEvents
         })
+      }
+
+      // events are loaded sorted by timestamp desc (newest events first)
+      // if we try to load all events we can easily run into throttling by aws api
+      function allRelevantEventsLoaded (events) {
+        return events.some(event => moment(event.Timestamp).valueOf() < startedAt)
       }
 
       function outputNewStackEvents () {
@@ -221,6 +227,7 @@ function Cfn (name, template) {
             }
             // if throttling has occurred, process events again
             if (err && throttling.test(err)) {
+              log('AWS api calls are throttling')
               return _processEvents(events)
             }
             // otherwise, notify of failure
