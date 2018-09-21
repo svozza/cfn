@@ -322,21 +322,27 @@ function Cfn (name, template) {
     return isJSONString(str) || isYAMLString(str)
   }
 
+  function templateBodyObject (template) {
+    return {
+      TemplateBody: template
+    }
+  }
+
   function processTemplate (template) {
     // Check if template is located in S3
-    if (isUriTemplate(template)) return Promise.resolve(template)
+    if (isUriTemplate(template)) return Promise.resolve({TemplateURL: template})
 
     // Check if template if a `js` file
-    if (_.endsWith(template, '.js')) return loadJs(template)
+    if (_.endsWith(template, '.js')) return loadJs(template).then(templateBodyObject)
 
     // Check if template is an object, assume this is JSON good to go
-    if (_.isPlainObject(template)) return Promise.resolve(JSON.stringify(template))
+    if (_.isPlainObject(template)) return Promise.resolve(template).then(flow(JSON.stringify, templateBodyObject))
 
     // Check if template is a valid string, serialised json or yaml
-    if (isValidTemplateString(template)) return Promise.resolve(template)
+    if (isValidTemplateString(template)) return Promise.resolve(templateBodyObject(template))
 
     // Default to loading template from file.
-    return fs.readFileAsync(template, 'utf8')
+    return fs.readFileAsync(template, 'utf8').then(templateBodyObject)
   }
 
   function isUriTemplate (template) {
@@ -344,26 +350,17 @@ function Cfn (name, template) {
     return httpsUri.test(template)
   }
 
-  function templateObject (template) {
-    return isUriTemplate(template)
-      ? {TemplateURL: template}
-      : {TemplateBody: template}
-  }
-
   function processStack (action, name, template) {
     return processTemplate(template)
-      .then(t => {
-        return templateObject(t)
-      })
-      .then(data => {
-        return normalizeParams(data, cfParams)
+      .then(templateObject => {
+        return normalizeParams(templateObject, cfParams)
           .then(noramlizedParams => {
             return processCfStack(action, merge({
               StackName: name,
               Capabilities: capabilities,
               Parameters: noramlizedParams,
               Tags: convertTags()
-            }, data))
+            }, templateObject))
           })
       })
       .then(function () {
@@ -398,8 +395,8 @@ function Cfn (name, template) {
 
   this.validate = function () {
     return processTemplate(template)
-      .then(function (data) {
-        return cf.validateTemplate(templateObject(data)).promise()
+      .then(function (templateObject) {
+        return cf.validateTemplate(templateObject).promise()
       })
   }
 

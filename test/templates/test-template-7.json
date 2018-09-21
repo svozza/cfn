@@ -1,0 +1,24 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Test Stack",
+  "Parameters": {
+    "TableName": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "LaunchConfiguration": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": true,
+        "KeyName": "danny_kp",
+        "ImageId": "ami-0af844a965e5738db",
+        "InstanceType": "t3.large",
+        "UserData": {
+          "Fn::Base64": "#!/bin/bash\nset -xe\ntouch /home/ubuntu/cloud-init.log\nsudo chown ubuntu:ubuntu /home/ubuntu/cloud-init.log\n\nsudo apt-get update &>> /home/ubuntu/cloud-init.log\n\nsudo apt-get install -y unzip zip libpython-dev libpython-stdlib python-pip\n\npip install awscli https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz &>> /home/ubuntu/cloud-init.log"
+
+        }
+      }
+    }
+  }
+}

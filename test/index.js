@@ -632,4 +632,15 @@ describe('CF templates', function () {
       })
     })
   })
+  describe('Create / Update template with s3 url inside', function () {
+    it('renders json string template correctly', function () {
+      var cfn = require('../')
+      return cfn('test-stack-name', path.join(__dirname, '/templates/test-template-7.json'))
+        .then(function (data) {
+          updateStackStub.stub.should.be.calledWithCFStackParams('test-stack-name', ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            require(path.join(__dirname, '/templates/test-template-7.json')))
+          return data
+        })
+    })
+  })
 })
